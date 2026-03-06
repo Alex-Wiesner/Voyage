@@ -3,9 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import CollectionCard from '$lib/components/cards/CollectionCard.svelte';
-	import CollectionLink from '$lib/components/CollectionLink.svelte';
 	import CollectionModal from '$lib/components/CollectionModal.svelte';
-	import NotFound from '$lib/components/NotFound.svelte';
 	import type { Collection, CollectionInvite, SlimCollection } from '$lib/types';
 	import { t } from 'svelte-i18n';
 
@@ -22,7 +20,6 @@
 	import DeleteWarning from '$lib/components/DeleteWarning.svelte';
 
 	export let data: any;
-	console.log('Collections page data:', data);
 
 	let collections: SlimCollection[] = data.props.adventures || [];
 	let sharedCollections: SlimCollection[] = data.props.sharedCollections || [];
@@ -377,105 +374,87 @@
 	</dialog>
 {/if}
 
-<div class="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-200">
+<div class="min-h-screen bg-base-100">
 	<div class="drawer lg:drawer-open">
 		<input id="my-drawer" type="checkbox" class="drawer-toggle" bind:checked={sidebarOpen} />
 
 		<div class="drawer-content">
 			<!-- Header Section -->
-			<div class="sticky top-0 z-40 bg-base-100/80 backdrop-blur-lg border-b border-base-300">
+			<div class="sticky top-0 z-40 bg-base-100/95 backdrop-blur-md border-b border-base-200">
 				<div class="container mx-auto px-6 py-4">
-					<div class="flex items-center justify-between">
-						<div class="flex items-center gap-4">
+					<div class="flex items-center justify-between gap-3">
+						<div class="flex items-center gap-3">
 							<button class="btn btn-ghost btn-square lg:hidden" on:click={toggleSidebar}>
 								<Filter class="w-5 h-5" />
 							</button>
-							<div class="flex items-center gap-3">
-								<div class="p-2 bg-primary/10 rounded-xl">
-									<CollectionIcon class="w-8 h-8 text-primary" />
-								</div>
-								<div>
-									<h1 class="text-3xl font-bold bg-clip-text text-primary">
-										{activeView === 'invites'
-											? $t('invites.title')
-											: $t(`adventures.my_collections`)}
-									</h1>
-									<p class="text-sm text-base-content/60">
-										{currentCount}
-										{activeView === 'owned'
-											? $t('navbar.collections')
-											: activeView === 'shared'
-												? $t('collection.shared_collections')
-												: activeView === 'archived'
-													? $t('adventures.archived_collections')
-													: $t('invites.pending_invites')}
-									</p>
-								</div>
-							</div>
+							<h1 class="text-2xl font-bold">Collections</h1>
 						</div>
 
-						<!-- View Toggle -->
-						<div class="tabs tabs-boxed bg-base-200">
-							<button
-								class="tab gap-2 {activeView === 'owned' ? 'tab-active' : ''}"
-								on:click={() => switchView('owned')}
-							>
-								<CollectionIcon class="w-4 h-4" />
-								<span class="hidden sm:inline">{$t('adventures.my_collections')}</span>
-								<div
-									class="badge badge-sm {activeView === 'owned' ? 'badge-primary' : 'badge-ghost'}"
-								>
-									{collections.length}
-								</div>
-							</button>
-							<button
-								class="tab gap-2 {activeView === 'shared' ? 'tab-active' : ''}"
-								on:click={() => switchView('shared')}
-							>
-								<Share class="w-4 h-4" />
-								<span class="hidden sm:inline">{$t('share.shared')}</span>
-								<div
-									class="badge badge-sm {activeView === 'shared' ? 'badge-primary' : 'badge-ghost'}"
-								>
-									{sharedCollections.length}
-								</div>
-							</button>
-							<button
-								class="tab gap-2 {activeView === 'archived' ? 'tab-active' : ''}"
-								on:click={() => switchView('archived')}
-							>
-								<Archive class="w-4 h-4" />
-								<span class="hidden sm:inline">{$t('adventures.archived')}</span>
-								<div
-									class="badge badge-sm {activeView === 'archived'
-										? 'badge-primary'
-										: 'badge-ghost'}"
-								>
-									{archivedCollections.length}
-								</div>
-							</button>
-							<button
-								class="tab gap-2 {activeView === 'invites' ? 'tab-active' : ''}"
-								on:click={() => switchView('invites')}
-							>
-								<div class="indicator">
-									<MailIcon class="w-4 h-4" />
-									{#if invites.length > 0}
-										<span class="indicator-item badge badge-xs badge-error"></span>
-									{/if}
-								</div>
-								<span class="hidden sm:inline">{$t('invites.title')}</span>
-								<div
-									class="badge badge-sm {activeView === 'invites'
-										? 'badge-primary'
-										: invites.length > 0
-											? 'badge-error'
-											: 'badge-ghost'}"
-								>
-									{invites.length}
-								</div>
-							</button>
-						</div>
+						<button
+							class="btn btn-primary btn-sm gap-2"
+							on:click={() => {
+								collectionToEdit = null;
+								isShowingCollectionModal = true;
+								newType = 'visited';
+							}}
+						>
+							<Plus class="w-4 h-4" />
+							{$t('collection.create')}
+						</button>
+					</div>
+
+					<div class="flex border-b border-base-200 mt-4 overflow-x-auto">
+						<button
+							class="tab px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {activeView ===
+							'owned'
+								? 'border-primary text-primary'
+								: 'border-transparent text-base-content/60 hover:text-base-content'}"
+							on:click={() => switchView('owned')}
+						>
+							<CollectionIcon class="w-4 h-4" />
+							<span class="hidden sm:inline">{$t('adventures.my_collections')}</span>
+							<div class="badge badge-sm badge-ghost">{collections.length}</div>
+						</button>
+						<button
+							class="tab px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {activeView ===
+							'shared'
+								? 'border-primary text-primary'
+								: 'border-transparent text-base-content/60 hover:text-base-content'}"
+							on:click={() => switchView('shared')}
+						>
+							<Share class="w-4 h-4" />
+							<span class="hidden sm:inline">{$t('share.shared')}</span>
+							<div class="badge badge-sm badge-ghost">{sharedCollections.length}</div>
+						</button>
+						<button
+							class="tab px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {activeView ===
+							'archived'
+								? 'border-primary text-primary'
+								: 'border-transparent text-base-content/60 hover:text-base-content'}"
+							on:click={() => switchView('archived')}
+						>
+							<Archive class="w-4 h-4" />
+							<span class="hidden sm:inline">{$t('adventures.archived')}</span>
+							<div class="badge badge-sm badge-ghost">{archivedCollections.length}</div>
+						</button>
+						<button
+							class="tab px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap {activeView ===
+							'invites'
+								? 'border-primary text-primary'
+								: 'border-transparent text-base-content/60 hover:text-base-content'}"
+							on:click={() => switchView('invites')}
+						>
+							<div class="indicator">
+								<MailIcon class="w-4 h-4" />
+								{#if invites.length > 0}
+									<span class="indicator-item badge badge-xs badge-error"></span>
+								{/if}
+							</div>
+							<span class="hidden sm:inline">{$t('invites.title')}</span>
+							<div class="badge badge-sm {invites.length > 0 ? 'badge-error' : 'badge-ghost'}">
+								{invites.length}
+							</div>
+						</button>
 					</div>
 				</div>
 			</div>
@@ -588,9 +567,7 @@
 					</div>
 				{:else}
 					<!-- Collections Grid -->
-					<div
-						class="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6"
-					>
+					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
 						{#each currentCollections as collection (collection.id)}
 							<CollectionCard
 								type=""
