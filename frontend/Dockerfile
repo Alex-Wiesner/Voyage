@@ -18,6 +18,9 @@ LABEL maintainer="Sean Morley" \
 # The WORKDIR instruction sets the working directory for everything that will happen next
 WORKDIR /app
 
+# Upgrade zlib to include Alpine security fixes
+RUN apk upgrade --no-cache zlib
+
 # Install pnpm globally first
 RUN npm install -g pnpm
 
