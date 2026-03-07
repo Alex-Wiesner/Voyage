@@ -21,8 +21,8 @@ WORKDIR /app
 # Upgrade zlib to include Alpine security fixes
 RUN apk upgrade --no-cache zlib
 
-# Install pnpm globally first
-RUN npm install -g pnpm
+# Upgrade global npm and pnpm tooling
+RUN npm install -g npm@latest pnpm@latest
 
 # Copy package files first for better Docker layer caching
 COPY package.json pnpm-lock.yaml* ./
