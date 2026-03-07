@@ -31,6 +31,7 @@
 	import ItineraryLinkModal from '$lib/components/collections/ItineraryLinkModal.svelte';
 	import ItineraryDayPickModal from '$lib/components/collections/ItineraryDayPickModal.svelte';
 	import Car from '~icons/mdi/car';
+	import Walk from '~icons/mdi/walk';
 	import LocationMarker from '~icons/mdi/map-marker';
 	import { t } from 'svelte-i18n';
 	import { addToast } from '$lib/toasts';
@@ -430,30 +431,42 @@
 		return (degrees * Math.PI) / 180;
 	}
 
-	function haversineDistanceKm(from: Location, to: Location): number | null {
-		if (
-			from.latitude === null ||
-			from.longitude === null ||
-			to.latitude === null ||
-			to.longitude === null
-		) {
-			return null;
+	function normalizeCoordinate(value: number | string | null | undefined): number | null {
+		if (typeof value === 'number') {
+			return Number.isFinite(value) ? value : null;
 		}
 
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			if (!trimmed) return null;
+
+			const parsed = Number(trimmed);
+			return Number.isFinite(parsed) ? parsed : null;
+		}
+
+		return null;
+	}
+
+	function haversineDistanceKm(from: Location, to: Location): number | null {
+		const fromLatitude = normalizeCoordinate(from.latitude);
+		const fromLongitude = normalizeCoordinate(from.longitude);
+		const toLatitude = normalizeCoordinate(to.latitude);
+		const toLongitude = normalizeCoordinate(to.longitude);
+
 		if (
-			!Number.isFinite(from.latitude) ||
-			!Number.isFinite(from.longitude) ||
-			!Number.isFinite(to.latitude) ||
-			!Number.isFinite(to.longitude)
+			fromLatitude === null ||
+			fromLongitude === null ||
+			toLatitude === null ||
+			toLongitude === null
 		) {
 			return null;
 		}
 
 		const earthRadiusKm = 6371;
-		const latDelta = toRadians(to.latitude - from.latitude);
-		const lonDelta = toRadians(to.longitude - from.longitude);
-		const fromLat = toRadians(from.latitude);
-		const toLat = toRadians(to.latitude);
+		const latDelta = toRadians(toLatitude - fromLatitude);
+		const lonDelta = toRadians(toLongitude - fromLongitude);
+		const fromLat = toRadians(fromLatitude);
+		const toLat = toRadians(toLatitude);
 
 		const a =
 			Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
@@ -478,6 +491,7 @@
 		distanceLabel: string;
 		durationLabel: string;
 		mode: 'walking' | 'driving';
+		unavailable?: boolean;
 	};
 
 	type ConnectorPair = {
@@ -526,20 +540,16 @@
 		const nextLocation = nextItem.resolvedObject as Location | null;
 		if (!currentLocation || !nextLocation) return null;
 
-		const fromLatitude = currentLocation.latitude;
-		const fromLongitude = currentLocation.longitude;
-		const toLatitude = nextLocation.latitude;
-		const toLongitude = nextLocation.longitude;
+		const fromLatitude = normalizeCoordinate(currentLocation.latitude);
+		const fromLongitude = normalizeCoordinate(currentLocation.longitude);
+		const toLatitude = normalizeCoordinate(nextLocation.latitude);
+		const toLongitude = normalizeCoordinate(nextLocation.longitude);
 
 		if (
 			fromLatitude === null ||
 			fromLongitude === null ||
 			toLatitude === null ||
-			toLongitude === null ||
-			!Number.isFinite(fromLatitude) ||
-			!Number.isFinite(fromLongitude) ||
-			!Number.isFinite(toLatitude) ||
-			!Number.isFinite(toLongitude)
+			toLongitude === null
 		) {
 			return null;
 		}
@@ -707,12 +717,19 @@
 		const nextType = nextItem.item?.type || '';
 		if (currentType !== 'location' || nextType !== 'location') return null;
 
+		const unavailableConnector: LocationConnector = {
+			distanceLabel: '',
+			durationLabel: getI18nText('itinerary.route_unavailable', 'Route unavailable'),
+			mode: 'walking',
+			unavailable: true
+		};
+
 		const currentLocation = currentItem.resolvedObject as Location | null;
 		const nextLocation = nextItem.resolvedObject as Location | null;
-		if (!currentLocation || !nextLocation) return null;
+		if (!currentLocation || !nextLocation) return unavailableConnector;
 
 		const distanceKm = haversineDistanceKm(currentLocation, nextLocation);
-		if (distanceKm === null) return null;
+		if (distanceKm === null) return unavailableConnector;
 
 		const walkingMinutes = (distanceKm / WALKING_SPEED_KMH) * 60;
 		const drivingMinutes = (distanceKm / DRIVING_SPEED_KMH) * 60;
@@ -735,6 +752,11 @@
 		}
 
 		return getFallbackLocationConnector(currentItem, nextItem);
+	}
+
+	function getI18nText(key: string, fallback: string): string {
+		const translated = $t(key);
+		return translated && translated !== key ? translated : fallback;
 	}
 
 	function editTransportationInline(transportation: Transportation) {
@@ -2607,16 +2629,39 @@
 
 													{#if locationConnector}
 														<div
-															class="mt-2 rounded-lg border border-dashed border-base-300 bg-base-100/70 px-3 py-2 text-xs opacity-80"
+															class="mt-2 rounded-lg border border-base-300 bg-base-200/60 px-3 py-2 text-xs"
 														>
-															<div class="flex items-center gap-2 flex-wrap">
-																<span class="font-medium">{locationConnector.distanceLabel}</span>
-																<span class="opacity-50">•</span>
-																<span>
-																	{locationConnector.mode === 'driving' ? '🚗' : '🚶'}
-																	{locationConnector.durationLabel}
-																</span>
-															</div>
+															{#if locationConnector.unavailable}
+																<div class="flex items-center gap-2 flex-wrap text-base-content/80">
+																	<span class="inline-flex items-center gap-1 font-medium">
+																		<LocationMarker class="w-3.5 h-3.5" />
+																		{locationConnector.durationLabel}
+																	</span>
+																	<span class="text-base-content/40">•</span>
+																	<span class="inline-flex items-center gap-1 text-primary/80 font-medium underline underline-offset-2">
+																		<LocationMarker class="w-3.5 h-3.5" />
+																		{getI18nText('itinerary.directions', 'Directions')}
+																	</span>
+																</div>
+															{:else}
+																<div class="flex items-center gap-2 flex-wrap text-base-content">
+																	<span class="inline-flex items-center gap-1 font-medium">
+																		{#if locationConnector.mode === 'driving'}
+																			<Car class="w-3.5 h-3.5" />
+																		{:else}
+																			<Walk class="w-3.5 h-3.5" />
+																		{/if}
+																		{locationConnector.durationLabel}
+																	</span>
+																	<span class="text-base-content/50">•</span>
+																	<span class="font-medium">{locationConnector.distanceLabel}</span>
+																	<span class="text-base-content/50">•</span>
+																	<span class="inline-flex items-center gap-1 text-primary font-medium underline underline-offset-2">
+																		<LocationMarker class="w-3.5 h-3.5" />
+																		{getI18nText('itinerary.directions', 'Directions')}
+																	</span>
+																</div>
+															{/if}
 														</div>
 													{/if}
 												</div>
