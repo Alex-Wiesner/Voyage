@@ -421,6 +421,306 @@
 		return `${Math.round(distanceKm)} km`;
 	}
 
+	const WALKING_SPEED_KMH = 5;
+	const DRIVING_SPEED_KMH = 60;
+	const WALKING_THRESHOLD_MINUTES = 20;
+	const ROUTE_METRICS_BATCH_SIZE = 50;
+
+	function toRadians(degrees: number): number {
+		return (degrees * Math.PI) / 180;
+	}
+
+	function haversineDistanceKm(from: Location, to: Location): number | null {
+		if (
+			from.latitude === null ||
+			from.longitude === null ||
+			to.latitude === null ||
+			to.longitude === null
+		) {
+			return null;
+		}
+
+		if (
+			!Number.isFinite(from.latitude) ||
+			!Number.isFinite(from.longitude) ||
+			!Number.isFinite(to.latitude) ||
+			!Number.isFinite(to.longitude)
+		) {
+			return null;
+		}
+
+		const earthRadiusKm = 6371;
+		const latDelta = toRadians(to.latitude - from.latitude);
+		const lonDelta = toRadians(to.longitude - from.longitude);
+		const fromLat = toRadians(from.latitude);
+		const toLat = toRadians(to.latitude);
+
+		const a =
+			Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
+			Math.cos(fromLat) * Math.cos(toLat) * Math.sin(lonDelta / 2) * Math.sin(lonDelta / 2);
+		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+		const distanceKm = earthRadiusKm * c;
+		return Number.isFinite(distanceKm) ? distanceKm : null;
+	}
+
+	function formatTravelDuration(minutes: number): string {
+		const totalMinutes = Math.max(0, Math.round(minutes));
+		const hours = Math.floor(totalMinutes / 60);
+		const remainingMinutes = totalMinutes % 60;
+
+		if (hours === 0) return `${remainingMinutes}m`;
+		if (remainingMinutes === 0) return `${hours}h`;
+		return `${hours}h ${remainingMinutes}m`;
+	}
+
+	type LocationConnector = {
+		distanceLabel: string;
+		durationLabel: string;
+		mode: 'walking' | 'driving';
+	};
+
+	type ConnectorPair = {
+		key: string;
+		from: {
+			latitude: number;
+			longitude: number;
+		};
+		to: {
+			latitude: number;
+			longitude: number;
+		};
+	};
+
+	type RouteMetricResult = {
+		distance_label?: string;
+		duration_label?: string;
+		mode?: 'walking' | 'driving';
+		distance_km?: number;
+		duration_minutes?: number;
+	};
+
+	let connectorMetricsMap: Record<string, LocationConnector> = {};
+	let activeConnectorFetchVersion = 0;
+
+	function getLocationConnectorKey(
+		currentItem: ResolvedItineraryItem,
+		nextItem: ResolvedItineraryItem | null
+	): string | null {
+		if (!nextItem) return null;
+		if (!currentItem?.id || !nextItem?.id) return null;
+		return `${currentItem.id}:${nextItem.id}`;
+	}
+
+	function getConnectorPair(
+		currentItem: ResolvedItineraryItem,
+		nextItem: ResolvedItineraryItem | null
+	): ConnectorPair | null {
+		if (!nextItem) return null;
+
+		const currentType = currentItem.item?.type || '';
+		const nextType = nextItem.item?.type || '';
+		if (currentType !== 'location' || nextType !== 'location') return null;
+
+		const currentLocation = currentItem.resolvedObject as Location | null;
+		const nextLocation = nextItem.resolvedObject as Location | null;
+		if (!currentLocation || !nextLocation) return null;
+
+		const fromLatitude = currentLocation.latitude;
+		const fromLongitude = currentLocation.longitude;
+		const toLatitude = nextLocation.latitude;
+		const toLongitude = nextLocation.longitude;
+
+		if (
+			fromLatitude === null ||
+			fromLongitude === null ||
+			toLatitude === null ||
+			toLongitude === null ||
+			!Number.isFinite(fromLatitude) ||
+			!Number.isFinite(fromLongitude) ||
+			!Number.isFinite(toLatitude) ||
+			!Number.isFinite(toLongitude)
+		) {
+			return null;
+		}
+
+		const key = getLocationConnectorKey(currentItem, nextItem);
+		if (!key) return null;
+
+		return {
+			key,
+			from: {
+				latitude: fromLatitude,
+				longitude: fromLongitude
+			},
+			to: {
+				latitude: toLatitude,
+				longitude: toLongitude
+			}
+		};
+	}
+
+	function getConnectorPairs(dayGroups: DayGroup[]): ConnectorPair[] {
+		const pairs: ConnectorPair[] = [];
+
+		for (const dayGroup of dayGroups) {
+			for (let index = 0; index < dayGroup.items.length - 1; index += 1) {
+				const pair = getConnectorPair(dayGroup.items[index], dayGroup.items[index + 1]);
+				if (pair) pairs.push(pair);
+			}
+		}
+
+		return pairs;
+	}
+
+	function chunkConnectorPairs(pairs: ConnectorPair[], chunkSize: number): ConnectorPair[][] {
+		const chunks: ConnectorPair[][] = [];
+		for (let index = 0; index < pairs.length; index += chunkSize) {
+			chunks.push(pairs.slice(index, index + chunkSize));
+		}
+		return chunks;
+	}
+
+	function formatDistanceLabel(distanceKm: number): string {
+		if (distanceKm < 10) return `${distanceKm.toFixed(1)} km`;
+		return `${Math.round(distanceKm)} km`;
+	}
+
+	function normalizeRouteMetricResult(result: RouteMetricResult | null): LocationConnector | null {
+		if (!result || (result.mode !== 'walking' && result.mode !== 'driving')) return null;
+
+		let distanceLabel = result.distance_label;
+		if (
+			!distanceLabel &&
+			typeof result.distance_km === 'number' &&
+			Number.isFinite(result.distance_km)
+		) {
+			distanceLabel = formatDistanceLabel(Math.max(0, result.distance_km));
+		}
+
+		let durationLabel = result.duration_label;
+		if (
+			!durationLabel &&
+			typeof result.duration_minutes === 'number' &&
+			Number.isFinite(result.duration_minutes)
+		) {
+			durationLabel = formatTravelDuration(Math.max(0, result.duration_minutes));
+		}
+
+		if (!distanceLabel || !durationLabel) return null;
+
+		return {
+			distanceLabel,
+			durationLabel,
+			mode: result.mode
+		};
+	}
+
+	async function fetchRouteMetricChunk(
+		chunk: ConnectorPair[]
+	): Promise<Record<string, LocationConnector>> {
+		const response = await fetch('/api/route-metrics/query/', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				pairs: chunk.map((pair) => ({
+					from: pair.from,
+					to: pair.to
+				}))
+			})
+		});
+
+		if (!response.ok) {
+			throw new Error(`Route metrics request failed (${response.status})`);
+		}
+
+		const payload = await response.json();
+		const results = Array.isArray(payload?.results) ? payload.results : [];
+		const normalizedChunk: Record<string, LocationConnector> = {};
+
+		for (let index = 0; index < chunk.length; index += 1) {
+			const connector = normalizeRouteMetricResult(results[index] || null);
+			if (!connector) continue;
+			normalizedChunk[chunk[index].key] = connector;
+		}
+
+		return normalizedChunk;
+	}
+
+	async function loadConnectorMetrics(connectorPairs: ConnectorPair[], fetchVersion: number) {
+		if (connectorPairs.length === 0) {
+			connectorMetricsMap = {};
+			return;
+		}
+
+		try {
+			const chunks = chunkConnectorPairs(connectorPairs, ROUTE_METRICS_BATCH_SIZE);
+			const responses = await Promise.all(chunks.map((chunk) => fetchRouteMetricChunk(chunk)));
+
+			if (fetchVersion !== activeConnectorFetchVersion) return;
+
+			const mergedMap: Record<string, LocationConnector> = {};
+			for (const chunkMap of responses) {
+				Object.assign(mergedMap, chunkMap);
+			}
+
+			connectorMetricsMap = mergedMap;
+		} catch (error) {
+			if (fetchVersion !== activeConnectorFetchVersion) return;
+			console.error('Failed to fetch connector route metrics:', error);
+			connectorMetricsMap = {};
+		}
+	}
+
+	$: {
+		const connectorPairs = getConnectorPairs(days);
+		activeConnectorFetchVersion += 1;
+		const fetchVersion = activeConnectorFetchVersion;
+		loadConnectorMetrics(connectorPairs, fetchVersion);
+	}
+
+	function getFallbackLocationConnector(
+		currentItem: ResolvedItineraryItem,
+		nextItem: ResolvedItineraryItem | null
+	): LocationConnector | null {
+		if (!nextItem) return null;
+
+		const currentType = currentItem.item?.type || '';
+		const nextType = nextItem.item?.type || '';
+		if (currentType !== 'location' || nextType !== 'location') return null;
+
+		const currentLocation = currentItem.resolvedObject as Location | null;
+		const nextLocation = nextItem.resolvedObject as Location | null;
+		if (!currentLocation || !nextLocation) return null;
+
+		const distanceKm = haversineDistanceKm(currentLocation, nextLocation);
+		if (distanceKm === null) return null;
+
+		const walkingMinutes = (distanceKm / WALKING_SPEED_KMH) * 60;
+		const drivingMinutes = (distanceKm / DRIVING_SPEED_KMH) * 60;
+		const useDriving = walkingMinutes > WALKING_THRESHOLD_MINUTES;
+
+		return {
+			distanceLabel: formatTransportationDistance(distanceKm) || `${distanceKm.toFixed(1)} km`,
+			durationLabel: formatTravelDuration(useDriving ? drivingMinutes : walkingMinutes),
+			mode: useDriving ? 'driving' : 'walking'
+		};
+	}
+
+	function getLocationConnector(
+		currentItem: ResolvedItineraryItem,
+		nextItem: ResolvedItineraryItem | null
+	): LocationConnector | null {
+		const key = getLocationConnectorKey(currentItem, nextItem);
+		if (key && connectorMetricsMap[key]) {
+			return connectorMetricsMap[key];
+		}
+
+		return getFallbackLocationConnector(currentItem, nextItem);
+	}
+
 	function editTransportationInline(transportation: Transportation) {
 		handleEditTransportation({ detail: transportation } as CustomEvent<Transportation>);
 	}
@@ -1833,6 +2133,7 @@
 												{user}
 												{collection}
 												compact={true}
+												showImage={false}
 											/>
 										{:else if objectType === 'transportation'}
 											<TransportationCard
@@ -2065,6 +2366,8 @@
 									{@const objectType = item.item?.type || ''}
 									{@const resolvedObj = item.resolvedObject}
 									{@const multiDay = isMultiDay(item)}
+									{@const nextItem = index < day.items.length - 1 ? day.items[index + 1] : null}
+									{@const locationConnector = getLocationConnector(item, nextItem)}
 									{@const isDraggingShadow = item[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
 
 									<div
@@ -2217,6 +2520,7 @@
 																{user}
 																{collection}
 																compact={true}
+																showImage={false}
 																on:changeDay={(e) =>
 																	handleOpenDayPickerForItem(
 																		e.detail.type,
@@ -2284,6 +2588,21 @@
 															/>
 														{/if}
 													{/if}
+
+													{#if locationConnector}
+														<div
+															class="mt-2 rounded-lg border border-dashed border-base-300 bg-base-100/70 px-3 py-2 text-xs opacity-80"
+														>
+															<div class="flex items-center gap-2 flex-wrap">
+																<span class="font-medium">{locationConnector.distanceLabel}</span>
+																<span class="opacity-50">•</span>
+																<span>
+																	{locationConnector.mode === 'driving' ? '🚗' : '🚶'}
+																	{locationConnector.durationLabel}
+																</span>
+															</div>
+														</div>
+													{/if}
 												</div>
 											</div>
 										{:else}
@@ -2299,8 +2618,7 @@
 
 						{#if canModify}
 							<div class="mt-4 pt-4 border-t border-base-300 border-dashed">
-								<div class="flex items-center justify-between gap-3 flex-wrap">
-									<p class="text-sm opacity-70">{$t('itinerary.add_place')}</p>
+								<div class="flex items-center justify-end gap-3 flex-wrap">
 									<div class="dropdown dropdown-end z-30">
 										<button
 											type="button"
@@ -2611,6 +2929,7 @@
 										{user}
 										{collection}
 										compact={true}
+										showImage={false}
 									/>
 								{:else if type === 'transportation'}
 									<TransportationCard

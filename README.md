@@ -54,7 +54,7 @@ Voyage aims to be simple, beautiful, and open to everyone — inheriting Adventu
   <img src="./brand/screenshots/map-satellite.png" alt="Location Details" />
   <p>View a 3D representation of your locations and activities on the map, allowing for a more immersive exploration of your travel history.</p>
   <img src="./brand/screenshots/dashboard.png" alt="Dashboard" />
-  <p>Displays a summary of your locations, including your world travel stats.</p>
+  <p>Displays a summary of your world travel stats and your most recently updated collections.</p>
   <img src="./brand/screenshots/itinerary.png" alt="Itinerary" />
   <p>Plan your adventures with a timeline-style itinerary planner. Each day shows numbered stops, compact transportation connectors between locations, and inline controls for adding places. Drag-and-drop reordering, day-level actions, and multiple views help you build the perfect trip.</p>
   <img src="./brand/screenshots/countries.png" alt="Countries" />
@@ -98,8 +98,9 @@ Voyage aims to be simple, beautiful, and open to everyone — inheriting Adventu
   - Upload trails and activities to your locations to remember your experiences with detailed maps and stats.
 - **Plan Your Next Trip** 📃: Take the guesswork out of planning your next adventure with an easy-to-use itinerary planner.
   - Itineraries can be created for any number of days and can include multiple destinations.
-  - A timeline-style day view shows ordered stops with numbered markers, compact transportation connector rows (mode, duration, distance), and inline add-place rows per day.
-  - Day-level quick actions include Auto-fill (to populate an empty itinerary from dated records) and an Optimize placeholder for future route optimization.
+  - A timeline-style day view shows ordered stops with numbered markers and compact location cards (no image banners) for a dense overview.
+  - Connector rows between consecutive locations display distance and travel time powered by [OSRM](https://project-osrm.org/) routing (walking if ≤ 20 min, driving otherwise), with automatic haversine fallback when OSRM is unavailable. Self-hosted OSRM instances are supported via the `OSRM_BASE_URL` environment variable. Transportation items appear as separate compact connector rows showing mode, duration, and distance.
+  - Each day has a single `+ Add` control to insert new places, and day-level quick actions include Auto-fill and an Optimize placeholder.
   - Itineraries include many planning features like flight information, notes, checklists, and links to external resources.
   - Itineraries can be shared with friends and family for collaborative planning.
 - **Share Your Experiences** 📸: Share your adventures with friends and family and collaborate on trips together.

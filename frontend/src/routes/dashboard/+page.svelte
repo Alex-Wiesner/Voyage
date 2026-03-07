@@ -1,5 +1,5 @@
 <script lang="ts">
-	import LocationCard from '$lib/components/cards/LocationCard.svelte';
+	import CollectionCard from '$lib/components/cards/CollectionCard.svelte';
 	import type { PageData } from './$types';
 	import { t } from 'svelte-i18n';
 
@@ -14,7 +14,7 @@
 	export let data: PageData;
 
 	const user = data.user;
-	const recentAdventures = data.props.adventures;
+	const recentCollections = (data.props as any).collections ?? [];
 	const stats = data.props.stats;
 
 	// Calculate completion percentage
@@ -153,8 +153,8 @@
 			</div>
 		</div>
 
-		<!-- Recent Adventures Section -->
-		{#if recentAdventures.length > 0}
+		<!-- Recent Collections Section -->
+		{#if recentCollections.length > 0}
 			<div class="mb-8">
 				<div class="flex items-center justify-between mb-6">
 					<div class="flex items-center gap-3">
@@ -162,20 +162,20 @@
 							<CalendarClock class="w-6 h-6 text-primary" />
 						</div>
 						<div>
-							<h2 class="text-3xl font-bold">{$t('dashboard.recent_adventures')}</h2>
+							<h2 class="text-3xl font-bold">{$t('navbar.collections')}</h2>
 							<p class="text-base-content/60">{$t('home.latest_travel_experiences')}</p>
 						</div>
 					</div>
-					<a href="/locations" class="btn btn-ghost gap-2">
+					<a href="/collections" class="btn btn-ghost gap-2">
 						{$t('dashboard.view_all')}
-						<span class="badge badge-primary">{stats.location_count}</span>
+						<span class="badge badge-primary">{stats.trips_count ?? 0}</span>
 					</a>
 				</div>
 
 				<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-					{#each recentAdventures as adventure}
+					{#each recentCollections as collection}
 						<div class="adventure-card">
-							<LocationCard {adventure} readOnly user={null} />
+							<CollectionCard {collection} type="viewonly" {user} />
 						</div>
 					{/each}
 				</div>
@@ -183,7 +183,7 @@
 		{/if}
 
 		<!-- Empty State / Inspiration -->
-		{#if recentAdventures.length === 0}
+		{#if recentCollections.length === 0}
 			<div
 				class="empty-state card bg-gradient-to-br from-base-100 to-base-200 shadow-2xl border border-base-300"
 			>
@@ -197,19 +197,19 @@
 					<h2
 						class="text-3xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
 					>
-						{$t('dashboard.no_recent_adventures')}
+						{$t('collection.no_collections_yet')}
 					</h2>
 					<p class="text-lg text-base-content/60 mb-8 max-w-md mx-auto leading-relaxed">
-						{$t('dashboard.document_some_adventures')}
+						{$t('collection.create_first')}
 					</p>
 
 					<div class="flex flex-col sm:flex-row gap-4 justify-center">
 						<a
-							href="/locations"
+							href="/collections"
 							class="btn btn-primary btn-lg gap-2 shadow-lg hover:shadow-xl transition-all duration-300"
 						>
 							<Plus class="w-5 h-5" />
-							{$t('map.add_location')}
+							{$t('collection.new_collection')}
 						</a>
 						<a href="/worldtravel" class="btn btn-outline btn-lg gap-2">
 							<FlagCheckeredVariantIcon class="w-5 h-5" />

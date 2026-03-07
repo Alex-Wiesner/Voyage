@@ -37,6 +37,7 @@
 	export let collection: Collection | null = null;
 	export let readOnly: boolean = false;
 	export let compact: boolean = false; // For compact grid display in itinerary
+	export let showImage: boolean = true;
 	export let itineraryItem: CollectionItineraryPlanner | null = null;
 
 	let isCollectionModalOpen: boolean = false;
@@ -278,86 +279,92 @@
 	class="card w-full max-w-md bg-base-300 shadow hover:shadow-md transition-all duration-200 border border-base-300 group"
 	aria-label="location-card"
 >
-	<!-- Image Section with Overlay -->
-	<div class="relative overflow-hidden rounded-t-2xl">
-		<CardCarousel images={adventure.images} icon={adventure.category?.icon} name={adventure.name} />
+	{#if showImage}
+		<!-- Image Section with Overlay -->
+		<div class="relative overflow-hidden rounded-t-2xl">
+			<CardCarousel
+				images={adventure.images}
+				icon={adventure.category?.icon}
+				name={adventure.name}
+			/>
 
-		<!-- Status Overlay (icon-only) -->
-		<div class="absolute top-2 left-4 flex items-center gap-3">
-			<div
-				class="tooltip tooltip-right"
-				data-tip={adventure.is_visited ? $t('adventures.visited') : $t('adventures.not_visited')}
-			>
-				{#if adventure.is_visited}
-					<div class="badge badge-sm badge-success p-1 rounded-full shadow-sm">
-						<Calendar class="w-4 h-4" />
-					</div>
-				{:else}
-					<div class="badge badge-sm badge-warning p-1 rounded-full shadow-sm">
-						<Clock class="w-4 h-4" />
-					</div>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Privacy Indicator -->
-		<div class="absolute top-2 right-4">
-			<div
-				class="tooltip tooltip-left"
-				data-tip={adventure.is_public ? $t('adventures.public') : $t('adventures.private')}
-			>
+			<!-- Status Overlay (icon-only) -->
+			<div class="absolute top-2 left-4 flex items-center gap-3">
 				<div
-					class="badge badge-sm p-1 rounded-full text-base-content shadow-sm"
-					role="img"
-					aria-label={adventure.is_public ? $t('adventures.public') : $t('adventures.private')}
+					class="tooltip tooltip-right"
+					data-tip={adventure.is_visited ? $t('adventures.visited') : $t('adventures.not_visited')}
 				>
-					{#if adventure.is_public}
-						<Eye class="w-4 h-4" />
+					{#if adventure.is_visited}
+						<div class="badge badge-sm badge-success p-1 rounded-full shadow-sm">
+							<Calendar class="w-4 h-4" />
+						</div>
 					{:else}
-						<EyeOff class="w-4 h-4" />
+						<div class="badge badge-sm badge-warning p-1 rounded-full shadow-sm">
+							<Clock class="w-4 h-4" />
+						</div>
 					{/if}
 				</div>
 			</div>
-		</div>
 
-		<!-- Category Badge -->
-		{#if adventure.category}
-			<div class="absolute bottom-4 left-4">
-				<a
-					href="/locations?types={adventure.category.name}"
-					class="badge badge-primary shadow-lg font-medium cursor-pointer hover:brightness-110 transition-all"
+			<!-- Privacy Indicator -->
+			<div class="absolute top-2 right-4">
+				<div
+					class="tooltip tooltip-left"
+					data-tip={adventure.is_public ? $t('adventures.public') : $t('adventures.private')}
 				>
-					{adventure.category.display_name}
-					{adventure.category.icon}
-				</a>
-			</div>
-		{/if}
-
-		<!-- Creator Avatar -->
-		{#if adventure.user && collection}
-			<div class="absolute bottom-4 right-4">
-				<div class="tooltip tooltip-left" data-tip={creatorDisplayName}>
-					<div class="avatar">
-						<div class="w-7 h-7 rounded-full ring-2 ring-white/40 shadow">
-							{#if adventure.user.profile_pic}
-								<img
-									src={adventure.user.profile_pic}
-									alt={creatorDisplayName}
-									class="rounded-full object-cover"
-								/>
-							{:else}
-								<div
-									class="w-7 h-7 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-primary-content font-semibold text-xs"
-								>
-									{creatorInitials.toUpperCase()}
-								</div>
-							{/if}
-						</div>
+					<div
+						class="badge badge-sm p-1 rounded-full text-base-content shadow-sm"
+						role="img"
+						aria-label={adventure.is_public ? $t('adventures.public') : $t('adventures.private')}
+					>
+						{#if adventure.is_public}
+							<Eye class="w-4 h-4" />
+						{:else}
+							<EyeOff class="w-4 h-4" />
+						{/if}
 					</div>
 				</div>
 			</div>
-		{/if}
-	</div>
+
+			<!-- Category Badge -->
+			{#if adventure.category}
+				<div class="absolute bottom-4 left-4">
+					<a
+						href="/locations?types={adventure.category.name}"
+						class="badge badge-primary shadow-lg font-medium cursor-pointer hover:brightness-110 transition-all"
+					>
+						{adventure.category.display_name}
+						{adventure.category.icon}
+					</a>
+				</div>
+			{/if}
+
+			<!-- Creator Avatar -->
+			{#if adventure.user && collection}
+				<div class="absolute bottom-4 right-4">
+					<div class="tooltip tooltip-left" data-tip={creatorDisplayName}>
+						<div class="avatar">
+							<div class="w-7 h-7 rounded-full ring-2 ring-white/40 shadow">
+								{#if adventure.user.profile_pic}
+									<img
+										src={adventure.user.profile_pic}
+										alt={creatorDisplayName}
+										class="rounded-full object-cover"
+									/>
+								{:else}
+									<div
+										class="w-7 h-7 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-primary-content font-semibold text-xs"
+									>
+										{creatorInitials.toUpperCase()}
+									</div>
+								{/if}
+							</div>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
 
 	<!-- Content Section -->
 	<div
