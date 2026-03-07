@@ -100,6 +100,7 @@
 	export let collection: Collection | null = null;
 	export let readOnly: boolean = false;
 	export let itineraryItem: CollectionItineraryItem | null = null;
+	export let showImage: boolean = true;
 
 	let isWarningModalOpen: boolean = false;
 
@@ -156,40 +157,42 @@
 	class="card w-full max-w-md bg-base-300 shadow hover:shadow-md transition-all duration-200 border border-base-300 group"
 	aria-label="lodging-card"
 >
-	<!-- Image Section with Overlay -->
-	<div class="relative overflow-hidden rounded-t-2xl">
-		<CardCarousel images={lodging.images} icon={getLodgingIcon(lodging.type)} name={lodging.name} />
+	{#if showImage}
+		<!-- Image Section with Overlay -->
+		<div class="relative overflow-hidden rounded-t-2xl">
+			<CardCarousel images={lodging.images} icon={getLodgingIcon(lodging.type)} name={lodging.name} />
 
-		<!-- Privacy Indicator -->
-		<div class="absolute top-2 right-4">
-			<div
-				class="tooltip tooltip-left"
-				data-tip={lodging.is_public ? $t('adventures.public') : $t('adventures.private')}
-			>
+			<!-- Privacy Indicator -->
+			<div class="absolute top-2 right-4">
 				<div
-					class="badge badge-sm p-1 rounded-full text-base-content shadow-sm"
-					role="img"
-					aria-label={lodging.is_public ? $t('adventures.public') : $t('adventures.private')}
+					class="tooltip tooltip-left"
+					data-tip={lodging.is_public ? $t('adventures.public') : $t('adventures.private')}
 				>
-					{#if lodging.is_public}
-						<Eye class="w-4 h-4" />
-					{:else}
-						<EyeOff class="w-4 h-4" />
-					{/if}
+					<div
+						class="badge badge-sm p-1 rounded-full text-base-content shadow-sm"
+						role="img"
+						aria-label={lodging.is_public ? $t('adventures.public') : $t('adventures.private')}
+					>
+						{#if lodging.is_public}
+							<Eye class="w-4 h-4" />
+						{:else}
+							<EyeOff class="w-4 h-4" />
+						{/if}
+					</div>
 				</div>
 			</div>
-		</div>
 
-		<!-- Category Badge -->
-		{#if lodging.type}
-			<div class="absolute bottom-4 left-4">
-				<div class="badge badge-primary shadow-lg font-medium">
-					{$t(`lodging.${lodging.type}`)}
-					{getLodgingIcon(lodging.type)}
+			<!-- Category Badge -->
+			{#if lodging.type}
+				<div class="absolute bottom-4 left-4">
+					<div class="badge badge-primary shadow-lg font-medium">
+						{$t(`lodging.${lodging.type}`)}
+						{getLodgingIcon(lodging.type)}
+					</div>
 				</div>
-			</div>
-		{/if}
-	</div>
+			{/if}
+		</div>
+	{/if}
 	<div class="card-body p-4 space-y-3 min-w-0">
 		<!-- Header -->
 		<div class="flex items-start justify-between gap-3">

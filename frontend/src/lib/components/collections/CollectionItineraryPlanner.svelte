@@ -55,6 +55,7 @@
 		date: string;
 		displayDate: string;
 		items: ResolvedItineraryItem[];
+		boundaryLodgingItem: ResolvedItineraryItem | null; // Displayed as day start + end anchors
 		overnightLodging: Lodging[]; // Lodging where guest is staying overnight (not check-in day)
 		globalDatedItems: ResolvedItineraryItem[]; // Trip-wide items that still carry a date
 		dayMetadata: CollectionItineraryDay | null; // Day name and description
@@ -390,6 +391,7 @@
 
 	// When opening a "create new item" modal we store the target date here
 	let pendingAddDate: string | null = null;
+	let pendingLodgingAddDate: string | null = null;
 	// Track if we've already added this location to the itinerary
 	let addedToItinerary: Set<string> = new Set();
 
@@ -506,6 +508,8 @@
 		};
 	};
 
+	type ConnectableItemType = 'location' | 'lodging';
+
 	type RouteMetricResult = {
 		distance_label?: string;
 		duration_label?: string;
@@ -516,6 +520,83 @@
 
 	let connectorMetricsMap: Record<string, LocationConnector> = {};
 	let activeConnectorFetchVersion = 0;
+
+	function isConnectableItemType(type: string): type is ConnectableItemType {
+		return type === 'location' || type === 'lodging';
+	}
+
+	function getCoordinatesFromItineraryItem(
+		item: ResolvedItineraryItem | null
+	): { latitude: number; longitude: number } | null {
+		if (!item) return null;
+
+		const itemType = item.item?.type || '';
+		if (!isConnectableItemType(itemType)) return null;
+
+		const resolvedObj = item.resolvedObject as Location | Lodging | null;
+		if (!resolvedObj) return null;
+
+		const latitude = normalizeCoordinate(resolvedObj.latitude);
+		const longitude = normalizeCoordinate(resolvedObj.longitude);
+		if (latitude === null || longitude === null) return null;
+
+		return { latitude, longitude };
+	}
+
+	function getFirstLocationItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
+		for (const item of items) {
+			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) continue;
+			if ((item.item?.type || '') === 'location') return item;
+		}
+
+		return null;
+	}
+
+	function getLastLocationItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
+		for (let index = items.length - 1; index >= 0; index -= 1) {
+			const item = items[index];
+			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) continue;
+			if ((item.item?.type || '') === 'location') return item;
+		}
+
+		return null;
+	}
+
+	function getBoundaryLodgingItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
+		for (const item of items) {
+			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) continue;
+			if ((item.item?.type || '') === 'lodging') return item;
+		}
+
+		return null;
+	}
+
+	function getDayTimelineItems(day: DayGroup): ResolvedItineraryItem[] {
+		if (!day.boundaryLodgingItem) return day.items;
+		return day.items.filter((item) => item.id !== day.boundaryLodgingItem?.id);
+	}
+
+	function reinsertBoundaryLodgingItem(
+		day: DayGroup,
+		timelineItems: ResolvedItineraryItem[]
+	): ResolvedItineraryItem[] {
+		if (!day.boundaryLodgingItem) return timelineItems;
+
+		const boundaryItem = day.boundaryLodgingItem;
+		if (timelineItems.some((item) => item.id === boundaryItem.id)) return timelineItems;
+
+		const previousBoundaryIndex = day.items.findIndex((item) => item.id === boundaryItem.id);
+		const insertIndex =
+			previousBoundaryIndex >= 0
+				? Math.min(previousBoundaryIndex, timelineItems.length)
+				: Math.min(0, timelineItems.length);
+
+		return [
+			...timelineItems.slice(0, insertIndex),
+			boundaryItem,
+			...timelineItems.slice(insertIndex)
+		];
+	}
 
 	function getLocationConnectorKey(
 		currentItem: ResolvedItineraryItem,
@@ -534,39 +615,19 @@
 
 		const currentType = currentItem.item?.type || '';
 		const nextType = nextItem.item?.type || '';
-		if (currentType !== 'location' || nextType !== 'location') return null;
+		if (!isConnectableItemType(currentType) || !isConnectableItemType(nextType)) return null;
 
-		const currentLocation = currentItem.resolvedObject as Location | null;
-		const nextLocation = nextItem.resolvedObject as Location | null;
-		if (!currentLocation || !nextLocation) return null;
-
-		const fromLatitude = normalizeCoordinate(currentLocation.latitude);
-		const fromLongitude = normalizeCoordinate(currentLocation.longitude);
-		const toLatitude = normalizeCoordinate(nextLocation.latitude);
-		const toLongitude = normalizeCoordinate(nextLocation.longitude);
-
-		if (
-			fromLatitude === null ||
-			fromLongitude === null ||
-			toLatitude === null ||
-			toLongitude === null
-		) {
-			return null;
-		}
+		const fromCoordinates = getCoordinatesFromItineraryItem(currentItem);
+		const toCoordinates = getCoordinatesFromItineraryItem(nextItem);
+		if (!fromCoordinates || !toCoordinates) return null;
 
 		const key = getLocationConnectorKey(currentItem, nextItem);
 		if (!key) return null;
 
 		return {
 			key,
-			from: {
-				latitude: fromLatitude,
-				longitude: fromLongitude
-			},
-			to: {
-				latitude: toLatitude,
-				longitude: toLongitude
-			}
+			from: fromCoordinates,
+			to: toCoordinates
 		};
 	}
 
@@ -589,16 +650,34 @@
 
 	function getConnectorPairs(dayGroups: DayGroup[]): ConnectorPair[] {
 		const pairs: ConnectorPair[] = [];
+		const seenKeys = new Set<string>();
+
+		function pushPair(pair: ConnectorPair | null) {
+			if (!pair || seenKeys.has(pair.key)) return;
+			seenKeys.add(pair.key);
+			pairs.push(pair);
+		}
 
 		for (const dayGroup of dayGroups) {
-			for (let index = 0; index < dayGroup.items.length - 1; index += 1) {
-				const currentItem = dayGroup.items[index];
+			const dayTimelineItems = getDayTimelineItems(dayGroup);
+			const firstLocationItem = getFirstLocationItem(dayGroup.items);
+			const lastLocationItem = getLastLocationItem(dayGroup.items);
+
+			if (dayGroup.boundaryLodgingItem && firstLocationItem) {
+				pushPair(getConnectorPair(dayGroup.boundaryLodgingItem, firstLocationItem));
+			}
+
+			for (let index = 0; index < dayTimelineItems.length - 1; index += 1) {
+				const currentItem = dayTimelineItems[index];
 				if (currentItem?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
 					continue;
 				}
-				const nextLocationItem = findNextLocationItem(dayGroup.items, index);
-				const pair = getConnectorPair(currentItem, nextLocationItem);
-				if (pair) pairs.push(pair);
+				const nextLocationItem = findNextLocationItem(dayTimelineItems, index);
+				pushPair(getConnectorPair(currentItem, nextLocationItem));
+			}
+
+			if (dayGroup.boundaryLodgingItem && lastLocationItem) {
+				pushPair(getConnectorPair(lastLocationItem, dayGroup.boundaryLodgingItem));
 			}
 		}
 
@@ -723,7 +802,7 @@
 
 		const currentType = currentItem.item?.type || '';
 		const nextType = nextItem.item?.type || '';
-		if (currentType !== 'location' || nextType !== 'location') return null;
+		if (!isConnectableItemType(currentType) || !isConnectableItemType(nextType)) return null;
 
 		const unavailableConnector: LocationConnector = {
 			distanceLabel: '',
@@ -732,8 +811,8 @@
 			unavailable: true
 		};
 
-		const currentLocation = currentItem.resolvedObject as Location | null;
-		const nextLocation = nextItem.resolvedObject as Location | null;
+		const currentLocation = currentItem.resolvedObject as Location | Lodging | null;
+		const nextLocation = nextItem.resolvedObject as Location | Lodging | null;
 		if (!currentLocation || !nextLocation) return unavailableConnector;
 
 		const distanceKm = haversineDistanceKm(currentLocation, nextLocation);
@@ -771,10 +850,10 @@
 
 		const currentType = currentItem.item?.type || '';
 		const nextType = nextItem.item?.type || '';
-		if (currentType !== 'location' || nextType !== 'location') return null;
+		if (!isConnectableItemType(currentType) || !isConnectableItemType(nextType)) return null;
 
-		const currentLocation = currentItem.resolvedObject as Location | null;
-		const nextLocation = nextItem.resolvedObject as Location | null;
+		const currentLocation = currentItem.resolvedObject as Location | Lodging | null;
+		const nextLocation = nextItem.resolvedObject as Location | Lodging | null;
 		if (!currentLocation || !nextLocation) return null;
 
 		const fromLatitude = normalizeCoordinate(currentLocation.latitude);
@@ -1025,21 +1104,26 @@
 
 	// If a new lodging was just created and we have a pending add-date,
 	// attach it to that date in the itinerary.
-	$: if (
-		lodgingBeingUpdated?.id &&
-		pendingAddDate &&
-		!addedToItinerary.has(lodgingBeingUpdated.id)
-	) {
+	$: {
+		const targetPendingDate = pendingLodgingAddDate || pendingAddDate;
+		if (
+			lodgingBeingUpdated?.id &&
+			targetPendingDate &&
+			!addedToItinerary.has(lodgingBeingUpdated.id)
+		) {
 		// Normalize check_in to date-only (YYYY-MM-DD) if present
 		const lodgingCheckInDate = lodgingBeingUpdated.check_in
 			? String(lodgingBeingUpdated.check_in).split('T')[0]
 			: null;
-		const targetDate = lodgingCheckInDate || pendingAddDate;
+		const targetDate = lodgingCheckInDate || targetPendingDate;
 
 		addItineraryItemForObject('lodging', lodgingBeingUpdated.id, targetDate);
 		// Mark this lodging as added to prevent duplicates
 		addedToItinerary.add(lodgingBeingUpdated.id);
 		addedToItinerary = addedToItinerary; // trigger reactivity
+		pendingAddDate = null;
+		pendingLodgingAddDate = null;
+		}
 	}
 
 	// Sync the transportationBeingUpdated with the collection.transportations array
@@ -1274,6 +1358,7 @@
 		for (let dt = start; dt <= end; dt = dt.plus({ days: 1 })) {
 			const iso = dt.toISODate();
 			const items = (grouped.get(iso) || []).sort((a, b) => a.order - b.order);
+			const boundaryLodgingItem = getBoundaryLodgingItem(items);
 			const overnightLodging = getOvernightLodgingForDate(collection, iso);
 			const globalDatedItems = globalByDate.get(iso) || [];
 
@@ -1284,6 +1369,7 @@
 				date: iso,
 				displayDate: dt.toFormat('cccc, LLLL d, yyyy'),
 				items,
+				boundaryLodgingItem,
 				overnightLodging,
 				globalDatedItems,
 				dayMetadata
@@ -1348,8 +1434,10 @@
 
 	function handleDndConsider(dayIndex: number, e: CustomEvent) {
 		const { items: newItems } = e.detail;
+		const day = days[dayIndex];
+		if (!day) return;
 		// Update the local state immediately for smooth drag feedback
-		days[dayIndex].items = newItems;
+		days[dayIndex].items = reinsertBoundaryLodgingItem(day, newItems);
 		days = [...days];
 	}
 
@@ -1378,9 +1466,11 @@
 
 	async function handleDndFinalize(dayIndex: number, e: CustomEvent) {
 		const { items: newItems, info } = e.detail;
+		const day = days[dayIndex];
+		if (!day) return;
 
 		// Update local state
-		days[dayIndex].items = newItems;
+		days[dayIndex].items = reinsertBoundaryLodgingItem(day, newItems);
 		days = [...days];
 
 		// Save to backend if item was actually moved (not just considered)
@@ -1992,6 +2082,7 @@
 			lodgingToEdit = null;
 			lodgingBeingUpdated = null;
 			pendingAddDate = null;
+			pendingLodgingAddDate = null;
 			addedToItinerary.clear();
 			addedToItinerary = addedToItinerary;
 		}}
@@ -1999,7 +2090,7 @@
 		{lodgingToEdit}
 		bind:lodging={lodgingBeingUpdated}
 		{collection}
-		initialVisitDate={pendingAddDate}
+		initialVisitDate={pendingLodgingAddDate || pendingAddDate}
 	/>
 {/if}
 
@@ -2239,10 +2330,11 @@
 												lodging={resolvedObj}
 												{user}
 												{collection}
-												itineraryItem={item}
-												on:delete={handleItemDelete}
-												on:removeFromItinerary={handleRemoveItineraryItem}
-												on:edit={handleEditLodging}
+														itineraryItem={item}
+														showImage={false}
+														on:delete={handleItemDelete}
+														on:removeFromItinerary={handleRemoveItineraryItem}
+														on:edit={handleEditLodging}
 												on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
 											/>
 										{:else if objectType === 'note'}
@@ -2287,6 +2379,33 @@
 			{@const weekday = DateTime.fromISO(day.date).toFormat('ccc')}
 			{@const dayOfMonth = DateTime.fromISO(day.date).toFormat('d')}
 			{@const monthAbbrev = DateTime.fromISO(day.date).toFormat('LLL')}
+			{@const boundaryLodgingItem = day.boundaryLodgingItem}
+			{@const firstLocationItem = getFirstLocationItem(day.items)}
+			{@const lastLocationItem = getLastLocationItem(day.items)}
+			{@const startBoundaryConnector =
+				boundaryLodgingItem && firstLocationItem
+					? getLocationConnector(boundaryLodgingItem, firstLocationItem)
+					: null}
+			{@const startBoundaryDirectionsUrl =
+				boundaryLodgingItem && firstLocationItem
+					? buildDirectionsUrl(
+							boundaryLodgingItem,
+							firstLocationItem,
+							startBoundaryConnector?.mode || 'walking'
+						)
+					: null}
+			{@const endBoundaryConnector =
+				boundaryLodgingItem && lastLocationItem
+					? getLocationConnector(lastLocationItem, boundaryLodgingItem)
+					: null}
+			{@const endBoundaryDirectionsUrl =
+				boundaryLodgingItem && lastLocationItem
+					? buildDirectionsUrl(
+							lastLocationItem,
+							boundaryLodgingItem,
+							endBoundaryConnector?.mode || 'walking'
+						)
+					: null}
 
 			<div class="card bg-base-200 shadow-xl">
 				<div class="card-body">
@@ -2428,7 +2547,81 @@
 
 					<!-- Day Items (vertical timeline with ordered stops) -->
 					<div>
-						{#if day.items.length === 0}
+						{#if boundaryLodgingItem?.resolvedObject}
+							<div class="mb-3">
+								<LodgingCard
+									lodging={boundaryLodgingItem.resolvedObject}
+									{user}
+									{collection}
+									itineraryItem={boundaryLodgingItem}
+									showImage={false}
+									on:delete={handleItemDelete}
+									on:removeFromItinerary={handleRemoveItineraryItem}
+									on:edit={handleEditLodging}
+									on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
+									on:changeDay={(e) =>
+										handleOpenDayPickerForItem(
+											e.detail.type,
+											e.detail.item,
+											e.detail.forcePicker,
+											day.date
+										)}
+								/>
+								{#if startBoundaryConnector}
+									<div
+										class="mt-2 rounded-lg border border-base-300 bg-base-200/60 px-3 py-2 text-xs"
+									>
+										{#if startBoundaryConnector.unavailable}
+											<div class="flex items-center gap-2 flex-wrap text-base-content/80">
+												<span class="inline-flex items-center gap-1 font-medium">
+													<LocationMarker class="w-3.5 h-3.5" />
+													{startBoundaryConnector.durationLabel}
+												</span>
+												<span class="text-base-content/40">•</span>
+												{#if startBoundaryDirectionsUrl}
+													<a
+														href={startBoundaryDirectionsUrl}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="inline-flex items-center gap-1 text-primary/80 font-medium underline underline-offset-2"
+													>
+														<LocationMarker class="w-3.5 h-3.5" />
+														{getI18nText('itinerary.directions', 'Directions')}
+													</a>
+												{/if}
+											</div>
+										{:else}
+											<div class="flex items-center gap-2 flex-wrap text-base-content">
+												<span class="inline-flex items-center gap-1 font-medium">
+													{#if startBoundaryConnector.mode === 'driving'}
+														<Car class="w-3.5 h-3.5" />
+													{:else}
+														<Walk class="w-3.5 h-3.5" />
+													{/if}
+													{startBoundaryConnector.durationLabel}
+												</span>
+												<span class="text-base-content/50">•</span>
+												<span class="font-medium">{startBoundaryConnector.distanceLabel}</span>
+												{#if startBoundaryDirectionsUrl}
+													<span class="text-base-content/50">•</span>
+													<a
+														href={startBoundaryDirectionsUrl}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="inline-flex items-center gap-1 text-primary font-medium underline underline-offset-2"
+													>
+														<LocationMarker class="w-3.5 h-3.5" />
+														{getI18nText('itinerary.directions', 'Directions')}
+													</a>
+												{/if}
+											</div>
+										{/if}
+									</div>
+								{/if}
+							</div>
+						{/if}
+
+						{#if getDayTimelineItems(day).length === 0 && !boundaryLodgingItem?.resolvedObject}
 							<div
 								class="card bg-base-100 shadow-sm border border-dashed border-base-300 p-4 text-center"
 							>
@@ -2440,7 +2633,7 @@
 						{:else}
 							<div
 								use:dndzone={{
-									items: day.items,
+									items: getDayTimelineItems(day),
 									flipDurationMs,
 									dropTargetStyle: { outline: 'none', border: 'none' },
 									dragDisabled: isSavingOrder || !canModify,
@@ -2450,11 +2643,11 @@
 								on:finalize={(e) => handleDndFinalize(dayIndex, e)}
 								class="space-y-3"
 							>
-								{#each day.items as item, index (item.id)}
+								{#each getDayTimelineItems(day) as item, index (item.id)}
 									{@const objectType = item.item?.type || ''}
 									{@const resolvedObj = item.resolvedObject}
 									{@const multiDay = isMultiDay(item)}
-									{@const nextLocationItem = findNextLocationItem(day.items, index)}
+									{@const nextLocationItem = findNextLocationItem(getDayTimelineItems(day), index)}
 									{@const locationConnector = getLocationConnector(item, nextLocationItem)}
 									{@const directionsUrl = buildDirectionsUrl(
 										item,
@@ -2462,6 +2655,7 @@
 										locationConnector?.mode || 'walking'
 									)}
 									{@const isDraggingShadow = item[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
+									{@const timelineNumber = index + 1}
 
 									<div
 										class="group relative transition-all duration-200 pointer-events-auto {isDraggingShadow
@@ -2475,9 +2669,9 @@
 													<div
 														class="w-7 h-7 rounded-full bg-primary text-primary-content text-xs font-bold flex items-center justify-center"
 													>
-														{index + 1}
+														{timelineNumber}
 													</div>
-													{#if index < day.items.length - 1}
+													{#if index < getDayTimelineItems(day).length - 1}
 														<div class="w-px bg-base-300 flex-1 min-h-10 mt-1"></div>
 													{/if}
 												</div>
@@ -2627,10 +2821,11 @@
 																lodging={resolvedObj}
 																{user}
 																{collection}
-																itineraryItem={item}
-																on:delete={handleItemDelete}
-																on:removeFromItinerary={handleRemoveItineraryItem}
-																on:edit={handleEditLodging}
+														itineraryItem={item}
+														showImage={false}
+														on:delete={handleItemDelete}
+														on:removeFromItinerary={handleRemoveItineraryItem}
+														on:edit={handleEditLodging}
 																on:moveToGlobal={(e) =>
 																	moveItemToGlobal(e.detail.type, e.detail.id)}
 																on:changeDay={(e) =>
@@ -2756,6 +2951,81 @@
 							</div>
 						{/if}
 
+						{#if boundaryLodgingItem?.resolvedObject}
+							<div class="mt-3">
+								{#if endBoundaryConnector}
+									<div
+										class="mb-2 rounded-lg border border-base-300 bg-base-200/60 px-3 py-2 text-xs"
+									>
+										{#if endBoundaryConnector.unavailable}
+											<div class="flex items-center gap-2 flex-wrap text-base-content/80">
+												<span class="inline-flex items-center gap-1 font-medium">
+													<LocationMarker class="w-3.5 h-3.5" />
+													{endBoundaryConnector.durationLabel}
+												</span>
+												<span class="text-base-content/40">•</span>
+												{#if endBoundaryDirectionsUrl}
+													<a
+														href={endBoundaryDirectionsUrl}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="inline-flex items-center gap-1 text-primary/80 font-medium underline underline-offset-2"
+													>
+														<LocationMarker class="w-3.5 h-3.5" />
+														{getI18nText('itinerary.directions', 'Directions')}
+													</a>
+												{/if}
+											</div>
+										{:else}
+											<div class="flex items-center gap-2 flex-wrap text-base-content">
+												<span class="inline-flex items-center gap-1 font-medium">
+													{#if endBoundaryConnector.mode === 'driving'}
+														<Car class="w-3.5 h-3.5" />
+													{:else}
+														<Walk class="w-3.5 h-3.5" />
+													{/if}
+													{endBoundaryConnector.durationLabel}
+												</span>
+												<span class="text-base-content/50">•</span>
+												<span class="font-medium">{endBoundaryConnector.distanceLabel}</span>
+												{#if endBoundaryDirectionsUrl}
+													<span class="text-base-content/50">•</span>
+													<a
+														href={endBoundaryDirectionsUrl}
+														target="_blank"
+														rel="noopener noreferrer"
+														class="inline-flex items-center gap-1 text-primary font-medium underline underline-offset-2"
+													>
+														<LocationMarker class="w-3.5 h-3.5" />
+														{getI18nText('itinerary.directions', 'Directions')}
+													</a>
+												{/if}
+											</div>
+										{/if}
+									</div>
+								{/if}
+
+								<LodgingCard
+									lodging={boundaryLodgingItem.resolvedObject}
+									{user}
+									{collection}
+									itineraryItem={boundaryLodgingItem}
+									showImage={false}
+									on:delete={handleItemDelete}
+									on:removeFromItinerary={handleRemoveItineraryItem}
+									on:edit={handleEditLodging}
+									on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
+									on:changeDay={(e) =>
+										handleOpenDayPickerForItem(
+											e.detail.type,
+											e.detail.item,
+											e.detail.forcePicker,
+											day.date
+										)}
+								/>
+							</div>
+						{/if}
+
 						{#if canModify}
 							<div class="mt-4 pt-4 border-t border-base-300 border-dashed">
 								<div class="flex items-center justify-end gap-3 flex-wrap">
@@ -2805,12 +3075,13 @@
 												<button
 													type="button"
 													role="menuitem"
-													on:click={() => {
-														pendingAddDate = day.date;
-														lodgingToEdit = null;
-														lodgingBeingUpdated = null;
-														isLodgingModalOpen = true;
-													}}
+												on:click={() => {
+													pendingAddDate = day.date;
+													pendingLodgingAddDate = day.date;
+													lodgingToEdit = null;
+													lodgingBeingUpdated = null;
+													isLodgingModalOpen = true;
+												}}
 												>
 													{$t('adventures.lodging')}
 												</button>
@@ -3081,11 +3352,12 @@
 									/>
 								{:else if type === 'lodging'}
 									<LodgingCard
-										lodging={item}
-										{user}
-										{collection}
-										on:delete={handleItemDelete}
-										on:edit={handleEditLodging}
+											lodging={item}
+											{user}
+											{collection}
+											showImage={false}
+											on:delete={handleItemDelete}
+											on:edit={handleEditLodging}
 									/>
 								{:else if type === 'note'}
 									<NoteCard
