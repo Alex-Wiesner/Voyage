@@ -25,7 +25,8 @@
 			"aestheticDark": "Estetická tmavá",
 			"aqua": "Aqua",
 			"northernLights": "Polárna žiara",
-			"dim": "Tlmená"
+			"dim": "Tlmená",
+			"catppuccinMocha": "Catppuccin Mocha"
 		},
 		"navigation": "Navigácia",
 		"worldtravel": "Svetové cestovanie"
@@ -1138,6 +1139,8 @@
 		"trip_context": "Kontext cesty",
 		"trip_context_info": "Kontextové položky cesty sa vzťahujú na celú cestu – napríklad miesta, ktoré sú samotným cieľom, všeobecné poznámky alebo zoznamy balíkov, ktoré sú dôležité pre celú cestu.",
 		"unscheduled_items": "Neplánované položky",
-		"unscheduled_items_desc": "Tieto položky sú spojené s touto cestou, ale zatiaľ neboli pridané ku konkrétnemu dňu."
+		"unscheduled_items_desc": "Tieto položky sú spojené s touto cestou, ale zatiaľ neboli pridané ku konkrétnemu dňu.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

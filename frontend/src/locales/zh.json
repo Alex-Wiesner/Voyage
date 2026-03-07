@@ -17,6 +17,7 @@
 			"aqua": "水色",
 			"dark": "深色",
 			"dim": "昏暗",
+			"catppuccinMocha": "Catppuccin Mocha",
 			"forest": "森林",
 			"light": "浅色",
 			"night": "夜色",
@@ -1098,7 +1099,9 @@
 		"remove_from_trip_context": "从上下文中删除",
 		"drag_to_reorder": "拖动以重新排序",
 		"add_to_day": "添加到日期",
-		"add_to_trip_context": "添加旅行背景"
+		"add_to_trip_context": "添加旅行背景",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	},
 	"collections": {
 		"all_items": "所有项目",

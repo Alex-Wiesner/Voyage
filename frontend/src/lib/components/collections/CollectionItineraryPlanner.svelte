@@ -35,6 +35,7 @@
 	import { t } from 'svelte-i18n';
 	import { addToast } from '$lib/toasts';
 	import Globe from '~icons/mdi/globe';
+	import { TRANSPORTATION_TYPES_ICONS } from '$lib';
 
 	export let collection: Collection;
 	export let user: any;
@@ -394,6 +395,74 @@
 	function normalizeDateOnly(value: string | null | undefined): string | null {
 		if (!value) return null;
 		return value.includes('T') ? value.split('T')[0] : value;
+	}
+
+	function getTransportationIcon(type: string | null | undefined) {
+		if (type && type in TRANSPORTATION_TYPES_ICONS) {
+			return TRANSPORTATION_TYPES_ICONS[type as keyof typeof TRANSPORTATION_TYPES_ICONS];
+		}
+		return '🚗';
+	}
+
+	function formatTransportationDuration(minutes: number | null | undefined): string | null {
+		if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return null;
+		const safeMinutes = Math.max(0, Math.floor(minutes));
+		const hours = Math.floor(safeMinutes / 60);
+		const mins = safeMinutes % 60;
+		const parts = [] as string[];
+		if (hours) parts.push(`${hours}h`);
+		parts.push(`${mins}m`);
+		return parts.join(' ');
+	}
+
+	function formatTransportationDistance(distanceKm: number | null | undefined): string | null {
+		if (distanceKm === null || distanceKm === undefined || Number.isNaN(distanceKm)) return null;
+		if (distanceKm < 10) return `${distanceKm.toFixed(1)} km`;
+		return `${Math.round(distanceKm)} km`;
+	}
+
+	function editTransportationInline(transportation: Transportation) {
+		handleEditTransportation({ detail: transportation } as CustomEvent<Transportation>);
+	}
+
+	async function removeItineraryEntry(item: CollectionItineraryItem) {
+		if (!item?.id) return;
+		try {
+			const res = await fetch(`/api/itineraries/${item.id}`, {
+				method: 'DELETE'
+			});
+			if (!res.ok) throw new Error('Failed to remove itinerary item');
+			handleRemoveItineraryItem(new CustomEvent('removeFromItinerary', { detail: item }) as any);
+			addToast('info', $t('itinerary.item_remove_success'));
+		} catch (error) {
+			console.error('Error removing itinerary item:', error);
+			addToast('error', $t('itinerary.item_remove_error'));
+		}
+	}
+
+	async function deleteTransportationFromItinerary(
+		item: CollectionItineraryItem,
+		transportation: Transportation
+	) {
+		const confirmed = window.confirm($t('adventures.transportation_delete_confirm'));
+		if (!confirmed) return;
+
+		try {
+			const res = await fetch(`/api/transportations/${transportation.id}`, {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+
+			if (!res.ok) throw new Error('Failed to delete transportation');
+
+			addToast('info', $t('transportation.transportation_deleted'));
+			handleItemDelete(new CustomEvent('delete', { detail: transportation.id }) as any);
+		} catch (error) {
+			console.error('Failed to delete transportation:', error);
+			addToast('error', $t('transportation.transportation_delete_error'));
+		}
 	}
 
 	function upsertNote(note: Note) {
@@ -1944,7 +2013,7 @@
 							{/if}
 						</div>
 
-						<!-- Actions: saving indicator + Add dropdown -->
+						<!-- Actions: saving indicator + day quick actions -->
 						<div class="flex-none ml-3 flex items-start gap-2">
 							{#if savingDay === day.date}
 								<div>
@@ -1956,111 +2025,19 @@
 							{/if}
 
 							{#if canModify}
-								<div class="dropdown z-30">
-									<button
-										type="button"
-										class="btn btn-square btn-sm btn-outline p-1"
-										aria-haspopup="menu"
-										aria-expanded="false"
-										title={$t('adventures.add')}
-									>
-										<Plus class="w-5 h-5" />
-									</button>
-									<ul
-										class="dropdown-content menu p-2 shadow bg-base-300 rounded-box w-56"
-										role="menu"
-									>
-										<li>
-											<button
-												type="button"
-												role="menuitem"
-												class="w-full text-left"
-												on:click={() => {
-													linkModalTargetDate = day.date;
-													linkModalDisplayDate = day.displayDate;
-													isItineraryLinkModalOpen = true;
-												}}
-											>
-												{$t('itinerary.link_existing_item')}
-											</button>
-										</li>
-										<li class="menu-title">{$t('adventures.create_new')}</li>
-										<li>
-											<button
-												type="button"
-												role="menuitem"
-												class="w-full text-left"
-												on:click={() => {
-													pendingAddDate = day.date;
-													locationToEdit = null;
-													locationBeingUpdated = null;
-													isLocationModalOpen = true;
-												}}
-											>
-												{$t('locations.location')}
-											</button>
-										</li>
-										<li>
-											<button
-												type="button"
-												role="menuitem"
-												class="w-full text-left"
-												on:click={() => {
-													pendingAddDate = day.date;
-													lodgingToEdit = null;
-													lodgingBeingUpdated = null;
-													isLodgingModalOpen = true;
-												}}
-											>
-												{$t('adventures.lodging')}
-											</button>
-										</li>
-										<li>
-											<button
-												type="button"
-												role="menuitem"
-												class="w-full text-left"
-												on:click={() => {
-													pendingAddDate = day.date;
-													isTransportationModalOpen = true;
-												}}
-											>
-												{$t('adventures.transportation')}
-											</button>
-										</li>
-										<li>
-											<button
-												type="button"
-												role="menuitem"
-												class="w-full text-left"
-												on:click={() => {
-													pendingAddDate = day.date;
-													isNoteModalOpen = true;
-												}}
-											>
-												{$t('adventures.note')}
-											</button>
-										</li>
-										<li>
-											<button
-												type="button"
-												role="menuitem"
-												class="w-full text-left"
-												on:click={() => {
-													pendingAddDate = day.date;
-													isChecklistModalOpen = true;
-												}}
-											>
-												{$t('adventures.checklist')}
-											</button>
-										</li>
-									</ul>
-								</div>
+								<button
+									type="button"
+									class="btn btn-sm btn-outline"
+									disabled={true}
+									title={$t('itinerary.optimize')}
+								>
+									{$t('itinerary.optimize')}
+								</button>
 							{/if}
 						</div>
 					</div>
 
-					<!-- Day Items -->
+					<!-- Day Items (vertical timeline with ordered stops) -->
 					<div>
 						{#if day.items.length === 0}
 							<div
@@ -2082,7 +2059,7 @@
 								}}
 								on:consider={(e) => handleDndConsider(dayIndex, e)}
 								on:finalize={(e) => handleDndFinalize(dayIndex, e)}
-								class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"
+								class="space-y-3"
 							>
 								{#each day.items as item, index (item.id)}
 									{@const objectType = item.item?.type || ''}
@@ -2091,173 +2068,223 @@
 									{@const isDraggingShadow = item[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
 
 									<div
-										class="group relative transition-all duration-200 pointer-events-auto h-full {isDraggingShadow
+										class="group relative transition-all duration-200 pointer-events-auto {isDraggingShadow
 											? 'opacity-40 scale-95'
 											: ''}"
 										animate:flip={{ duration: flipDurationMs }}
 									>
 										{#if resolvedObj}
-											<!-- Drag Handle Container -->
-											{#if canModify}
-												<div
-													class="absolute left-2 top-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-													title={$t('itinerary.drag_to_reorder')}
-												>
+											<div class="flex gap-3">
+												<div class="relative flex flex-col items-center shrink-0 pt-1">
 													<div
-														class="itinerary-drag-handle btn btn-circle btn-xs btn-ghost bg-base-100/80 backdrop-blur-sm shadow-sm hover:bg-base-200 cursor-grab active:cursor-grabbing"
-														aria-label={$t('itinerary.drag_to_reorder')}
-														role="button"
-														tabindex="0"
+														class="w-7 h-7 rounded-full bg-primary text-primary-content text-xs font-bold flex items-center justify-center"
 													>
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															class="h-3 w-3"
-															fill="none"
-															viewBox="0 0 24 24"
-															stroke="currentColor"
-														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M4 8h16M4 16h16"
-															/>
-														</svg>
+														{index + 1}
 													</div>
+													{#if index < day.items.length - 1}
+														<div class="w-px bg-base-300 flex-1 min-h-10 mt-1"></div>
+													{/if}
 												</div>
-											{/if}
 
-											<!-- Order Badge
-											<div class="absolute right-2 top-2 z-10">
-												<div
-													class="badge badge-primary badge-sm font-bold shadow-md"
-													title="Item order"
-												>
-													#{index + 1}
-												</div>
-											</div> -->
-
-											<!-- Multi-day indicator for lodging -->
-											{#if multiDay && objectType === 'lodging'}
-												<div class="absolute left-2 bottom-2 z-10">
-													<div class="badge badge-info badge-xs gap-1 shadow-sm">
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															class="h-3 w-3"
-															fill="none"
-															viewBox="0 0 24 24"
-															stroke="currentColor"
+												<div class="relative flex-1 min-w-0">
+													{#if canModify}
+														<div
+															class="absolute left-0 top-0 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+															title={$t('itinerary.drag_to_reorder')}
 														>
-															<path
-																stroke-linecap="round"
-																stroke-linejoin="round"
-																stroke-width="2"
-																d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-															/>
-														</svg>
-														<span class="text-xs">{$t('itinerary.multi_day')}</span>
-													</div>
-												</div>
-											{/if}
+															<div
+																class="itinerary-drag-handle btn btn-circle btn-xs btn-ghost bg-base-100/80 backdrop-blur-sm shadow-sm hover:bg-base-200 cursor-grab active:cursor-grabbing"
+																aria-label={$t('itinerary.drag_to_reorder')}
+																role="button"
+																tabindex="0"
+															>
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	class="h-3 w-3"
+																	fill="none"
+																	viewBox="0 0 24 24"
+																	stroke="currentColor"
+																>
+																	<path
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																		stroke-width="2"
+																		d="M4 8h16M4 16h16"
+																	/>
+																</svg>
+															</div>
+														</div>
+													{/if}
 
-											<!-- Card with smooth transition and proper sizing for grid -->
-											<div class="transition-all duration-200 h-full">
-												<!-- Display the appropriate card based on type -->
-												{#if objectType === 'location'}
-													<LocationCard
-														adventure={resolvedObj}
-														on:edit={handleEditLocation}
-														on:delete={handleItemDelete}
-														on:duplicate={handleDuplicateLocation}
-														itineraryItem={item}
-														on:removeFromItinerary={handleRemoveItineraryItem}
-														on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
-														{user}
-														{collection}
-														compact={true}
-														on:changeDay={(e) =>
-															handleOpenDayPickerForItem(
-																e.detail.type,
-																e.detail.item,
-																e.detail.forcePicker,
-																day.date
-															)}
-													/>
-												{:else if objectType === 'transportation'}
-													<TransportationCard
-														transportation={resolvedObj}
-														{user}
-														{collection}
-														on:delete={handleItemDelete}
-														itineraryItem={item}
-														on:removeFromItinerary={handleRemoveItineraryItem}
-														on:edit={handleEditTransportation}
-														on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
-														on:changeDay={(e) =>
-															handleOpenDayPickerForItem(
-																e.detail.type,
-																e.detail.item,
-																e.detail.forcePicker,
-																day.date
-															)}
-													/>
-												{:else if objectType === 'lodging'}
-													<LodgingCard
-														lodging={resolvedObj}
-														{user}
-														{collection}
-														itineraryItem={item}
-														on:delete={handleItemDelete}
-														on:removeFromItinerary={handleRemoveItineraryItem}
-														on:edit={handleEditLodging}
-														on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
-														on:changeDay={(e) =>
-															handleOpenDayPickerForItem(
-																e.detail.type,
-																e.detail.item,
-																e.detail.forcePicker,
-																day.date
-															)}
-													/>
-												{:else if objectType === 'note'}
-													<!-- @ts-ignore - TypeScript can't narrow union type properly -->
-													<NoteCard
-														note={resolvedObj}
-														{user}
-														{collection}
-														on:delete={handleItemDelete}
-														itineraryItem={item}
-														on:removeFromItinerary={handleRemoveItineraryItem}
-														on:edit={handleEditNote}
-														on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
-														on:changeDay={(e) =>
-															handleOpenDayPickerForItem(
-																e.detail.type,
-																e.detail.item,
-																e.detail.forcePicker,
-																day.date
-															)}
-													/>
-												{:else if objectType === 'checklist'}
-													<!-- @ts-ignore - TypeScript can't narrow union type properly -->
-													<ChecklistCard
-														checklist={resolvedObj}
-														{user}
-														{collection}
-														on:delete={handleItemDelete}
-														itineraryItem={item}
-														on:removeFromItinerary={handleRemoveItineraryItem}
-														on:edit={handleEditChecklist}
-														on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
-														on:changeDay={(e) =>
-															handleOpenDayPickerForItem(
-																e.detail.type,
-																e.detail.item,
-																e.detail.forcePicker,
-																day.date
-															)}
-													/>
-												{/if}
+													{#if objectType === 'transportation'}
+														<div class="rounded-xl border border-base-300 bg-base-100 px-4 py-3">
+															<div class="flex items-center justify-between gap-3 mb-2">
+																<div class="flex items-center gap-2 min-w-0">
+																	<span class="text-lg"
+																		>{getTransportationIcon(resolvedObj.type)}</span
+																	>
+																	<p class="font-semibold truncate">{resolvedObj.name}</p>
+																	<span class="badge badge-outline badge-sm truncate">
+																		{$t(`transportation.modes.${resolvedObj.type}`) ||
+																			resolvedObj.type}
+																	</span>
+																</div>
+																<div class="text-xs opacity-70 flex items-center gap-2 shrink-0">
+																	{#if formatTransportationDuration(resolvedObj.travel_duration_minutes)}
+																		<span
+																			>{formatTransportationDuration(
+																				resolvedObj.travel_duration_minutes
+																			)}</span
+																		>
+																	{/if}
+																	{#if formatTransportationDistance(resolvedObj.distance)}
+																		<span>{formatTransportationDistance(resolvedObj.distance)}</span
+																		>
+																	{/if}
+																</div>
+															</div>
+															<div class="text-sm opacity-80 truncate">
+																{resolvedObj.from_location || '—'} → {resolvedObj.to_location ||
+																	'—'}
+															</div>
+															{#if canModify}
+																<div class="mt-2 flex flex-wrap gap-2">
+																	<button
+																		type="button"
+																		class="btn btn-xs btn-ghost"
+																		on:click={() => editTransportationInline(resolvedObj)}
+																	>
+																		{$t('transportation.edit')}
+																	</button>
+																	<button
+																		type="button"
+																		class="btn btn-xs btn-ghost"
+																		on:click={() =>
+																			handleOpenDayPickerForItem(
+																				'transportation',
+																				resolvedObj,
+																				true,
+																				day.date
+																			)}
+																	>
+																		{$t('itinerary.change_day')}
+																	</button>
+																	<button
+																		type="button"
+																		class="btn btn-xs btn-ghost"
+																		on:click={() =>
+																			moveItemToGlobal('transportation', resolvedObj.id)}
+																	>
+																		{$t('itinerary.move_to_trip_context') || 'Move to Trip Context'}
+																	</button>
+																	<button
+																		type="button"
+																		class="btn btn-xs btn-ghost"
+																		on:click={() => removeItineraryEntry(item)}
+																	>
+																		{$t('itinerary.remove_from_itinerary')}
+																	</button>
+																	<button
+																		type="button"
+																		class="btn btn-xs btn-error btn-outline"
+																		on:click={() =>
+																			deleteTransportationFromItinerary(item, resolvedObj)}
+																	>
+																		{$t('adventures.delete')}
+																	</button>
+																</div>
+															{/if}
+														</div>
+													{:else}
+														{#if multiDay && objectType === 'lodging'}
+															<div class="mb-2">
+																<div class="badge badge-info badge-xs gap-1 shadow-sm">
+																	<span class="text-xs">{$t('itinerary.multi_day')}</span>
+																</div>
+															</div>
+														{/if}
+
+														{#if objectType === 'location'}
+															<LocationCard
+																adventure={resolvedObj}
+																on:edit={handleEditLocation}
+																on:delete={handleItemDelete}
+																on:duplicate={handleDuplicateLocation}
+																itineraryItem={item}
+																on:removeFromItinerary={handleRemoveItineraryItem}
+																on:moveToGlobal={(e) =>
+																	moveItemToGlobal(e.detail.type, e.detail.id)}
+																{user}
+																{collection}
+																compact={true}
+																on:changeDay={(e) =>
+																	handleOpenDayPickerForItem(
+																		e.detail.type,
+																		e.detail.item,
+																		e.detail.forcePicker,
+																		day.date
+																	)}
+															/>
+														{:else if objectType === 'lodging'}
+															<LodgingCard
+																lodging={resolvedObj}
+																{user}
+																{collection}
+																itineraryItem={item}
+																on:delete={handleItemDelete}
+																on:removeFromItinerary={handleRemoveItineraryItem}
+																on:edit={handleEditLodging}
+																on:moveToGlobal={(e) =>
+																	moveItemToGlobal(e.detail.type, e.detail.id)}
+																on:changeDay={(e) =>
+																	handleOpenDayPickerForItem(
+																		e.detail.type,
+																		e.detail.item,
+																		e.detail.forcePicker,
+																		day.date
+																	)}
+															/>
+														{:else if objectType === 'note'}
+															<NoteCard
+																note={resolvedObj}
+																{user}
+																{collection}
+																on:delete={handleItemDelete}
+																itineraryItem={item}
+																on:removeFromItinerary={handleRemoveItineraryItem}
+																on:edit={handleEditNote}
+																on:moveToGlobal={(e) =>
+																	moveItemToGlobal(e.detail.type, e.detail.id)}
+																on:changeDay={(e) =>
+																	handleOpenDayPickerForItem(
+																		e.detail.type,
+																		e.detail.item,
+																		e.detail.forcePicker,
+																		day.date
+																	)}
+															/>
+														{:else if objectType === 'checklist'}
+															<ChecklistCard
+																checklist={resolvedObj}
+																{user}
+																{collection}
+																on:delete={handleItemDelete}
+																itineraryItem={item}
+																on:removeFromItinerary={handleRemoveItineraryItem}
+																on:edit={handleEditChecklist}
+																on:moveToGlobal={(e) =>
+																	moveItemToGlobal(e.detail.type, e.detail.id)}
+																on:changeDay={(e) =>
+																	handleOpenDayPickerForItem(
+																		e.detail.type,
+																		e.detail.item,
+																		e.detail.forcePicker,
+																		day.date
+																	)}
+															/>
+														{/if}
+													{/if}
+												</div>
 											</div>
 										{:else}
 											<!-- Fallback for unresolved items -->
@@ -2267,6 +2294,108 @@
 										{/if}
 									</div>
 								{/each}
+							</div>
+						{/if}
+
+						{#if canModify}
+							<div class="mt-4 pt-4 border-t border-base-300 border-dashed">
+								<div class="flex items-center justify-between gap-3 flex-wrap">
+									<p class="text-sm opacity-70">{$t('itinerary.add_place')}</p>
+									<div class="dropdown dropdown-end z-30">
+										<button
+											type="button"
+											class="btn btn-sm btn-outline"
+											aria-haspopup="menu"
+											aria-expanded="false"
+										>
+											<Plus class="w-4 h-4" />
+											{$t('adventures.add')}
+										</button>
+										<ul
+											class="dropdown-content menu p-2 shadow bg-base-300 rounded-box w-56"
+											role="menu"
+										>
+											<li>
+												<button
+													type="button"
+													role="menuitem"
+													on:click={() => {
+														linkModalTargetDate = day.date;
+														linkModalDisplayDate = day.displayDate;
+														isItineraryLinkModalOpen = true;
+													}}
+												>
+													{$t('itinerary.link_existing_item')}
+												</button>
+											</li>
+											<li class="menu-title">{$t('adventures.create_new')}</li>
+											<li>
+												<button
+													type="button"
+													role="menuitem"
+													on:click={() => {
+														pendingAddDate = day.date;
+														locationToEdit = null;
+														locationBeingUpdated = null;
+														isLocationModalOpen = true;
+													}}
+												>
+													{$t('locations.location')}
+												</button>
+											</li>
+											<li>
+												<button
+													type="button"
+													role="menuitem"
+													on:click={() => {
+														pendingAddDate = day.date;
+														lodgingToEdit = null;
+														lodgingBeingUpdated = null;
+														isLodgingModalOpen = true;
+													}}
+												>
+													{$t('adventures.lodging')}
+												</button>
+											</li>
+											<li>
+												<button
+													type="button"
+													role="menuitem"
+													on:click={() => {
+														pendingAddDate = day.date;
+														isTransportationModalOpen = true;
+													}}
+												>
+													{$t('adventures.transportation')}
+												</button>
+											</li>
+											<li>
+												<button
+													type="button"
+													role="menuitem"
+													on:click={() => {
+														pendingAddDate = day.date;
+														isNoteModalOpen = true;
+													}}
+												>
+													{$t('adventures.note')}
+												</button>
+											</li>
+											<li>
+												<button
+													type="button"
+													role="menuitem"
+													on:click={() => {
+														pendingAddDate = day.date;
+														isChecklistModalOpen = true;
+													}}
+												>
+													{$t('adventures.checklist')}
+												</button>
+											</li>
+										</ul>
+									</div>
+								</div>
 							</div>
 						{/if}
 					</div>

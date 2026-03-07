@@ -481,6 +481,7 @@
 			"aqua": "Aqua",
 			"dark": "Buio",
 			"dim": "Fioco",
+			"catppuccinMocha": "Catppuccin Mocha",
 			"forest": "Foresta",
 			"light": "Leggero",
 			"night": "Notte",
@@ -1138,6 +1139,8 @@
 		"trip_context": "Contesto del viaggio",
 		"trip_context_info": "Gli elementi contestuali del viaggio si applicano all'intero viaggio, ad esempio luoghi che rappresentano la destinazione stessa, note generali o liste di cose da portare importanti per l'intero viaggio.",
 		"unscheduled_items": "Elementi non pianificati",
-		"unscheduled_items_desc": "Questi elementi sono collegati a questo viaggio ma non sono ancora stati aggiunti a un giorno specifico."
+		"unscheduled_items_desc": "Questi elementi sono collegati a questo viaggio ma non sono ancora stati aggiunti a un giorno specifico.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

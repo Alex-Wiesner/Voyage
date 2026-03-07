@@ -704,6 +704,7 @@
 			"aqua": "アクア",
 			"dark": "暗い",
 			"dim": "薄暗い",
+			"catppuccinMocha": "Catppuccin Mocha",
 			"forest": "森",
 			"light": "ライト",
 			"night": "夜",
@@ -1138,6 +1139,8 @@
 		"trip_context": "旅行のコンテキスト",
 		"trip_context_info": "旅行コンテキスト項目は、旅行全体に適用されます。たとえば、目的地そのものである場所、一般的なメモ、旅行全体にとって重要な持ち物リストなどです。",
 		"unscheduled_items": "予定外の項目",
-		"unscheduled_items_desc": "これらのアイテムはこの旅行にリンクされていますが、まだ特定の日に追加されていません。"
+		"unscheduled_items_desc": "これらのアイテムはこの旅行にリンクされていますが、まだ特定の日に追加されていません。",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

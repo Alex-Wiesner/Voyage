@@ -644,6 +644,7 @@
 			"aqua": "아쿠아",
 			"dark": "어두운",
 			"dim": "어둑한",
+			"catppuccinMocha": "Catppuccin Mocha",
 			"forest": "숲",
 			"light": "빛",
 			"night": "밤",
@@ -1138,6 +1139,8 @@
 		"trip_context": "여행 상황",
 		"trip_context_info": "여행 컨텍스트 항목은 전체 여행에 적용됩니다. 예를 들어 목적지 자체인 위치, 일반 참고 사항, 전체 여행에 중요한 짐 목록 등이 있습니다.",
 		"unscheduled_items": "예정되지 않은 품목",
-		"unscheduled_items_desc": "이 항목은 이 여행에 연결되어 있지만 아직 특정 날짜에 추가되지 않았습니다."
+		"unscheduled_items_desc": "이 항목은 이 여행에 연결되어 있지만 아직 특정 날짜에 추가되지 않았습니다.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

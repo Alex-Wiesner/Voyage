@@ -481,6 +481,7 @@
 			"aqua": "Aqua",
 			"dark": "Dunkel",
 			"dim": "Düster",
+			"catppuccinMocha": "Catppuccin Mocha",
 			"forest": "Wald",
 			"light": "Hell",
 			"night": "Nacht",
@@ -1138,6 +1139,8 @@
 		"trip_context": "Reisekontext",
 		"trip_context_info": "Reisekontextelemente gelten für die gesamte Reise – zum Beispiel Orte, die das Ziel selbst darstellen, allgemeine Notizen oder Packlisten, die für die gesamte Reise wichtig sind.",
 		"unscheduled_items": "Ungeplante Einträge",
-		"unscheduled_items_desc": "Diese Einträge sind mit dieser Reise verknüpft, wurden aber noch keinem bestimmten Tag hinzugefügt."
+		"unscheduled_items_desc": "Diese Einträge sind mit dieser Reise verknüpft, wurden aber noch keinem bestimmten Tag hinzugefügt.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

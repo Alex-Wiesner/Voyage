@@ -22,6 +22,7 @@
 			"aqua": "Aqua",
 			"dark": "Mørk",
 			"dim": "Svak",
+			"catppuccinMocha": "Catppuccin Mocha",
 			"forest": "Skog",
 			"light": "Lys",
 			"night": "Natt",
@@ -1138,6 +1139,8 @@
 		"trip_context": "Turkontekst",
 		"trip_context_info": "Turkontekstelementer gjelder for hele turen – for eksempel steder som er selve destinasjonen, generelle notater eller pakkelister som er viktige for hele turen.",
 		"unscheduled_items": "Ikke-planlagte elementer",
-		"unscheduled_items_desc": "Disse elementene er knyttet til denne turen, men har ikke blitt lagt til en bestemt dag ennå."
+		"unscheduled_items_desc": "Disse elementene er knyttet til denne turen, men har ikke blitt lagt til en bestemt dag ennå.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

@@ -25,7 +25,8 @@
 			"aestheticDark": "Esztétikus sötét",
 			"aqua": "Akvamarin",
 			"northernLights": "Sarki fény",
-			"dim": "Halvány"
+			"dim": "Halvány",
+			"catppuccinMocha": "Catppuccin Mocha"
 		},
 		"navigation": "Navigáció",
 		"worldtravel": "Világutazás"
@@ -1138,6 +1139,8 @@
 		"trip_context": "Utazási kontextus",
 		"trip_context_info": "Az utazási kontextus elemei az egész utazásra vonatkoznak – például olyan helyek, amelyek maga az úti cél, általános megjegyzések vagy csomaglisták, amelyek az egész utazás szempontjából fontosak.",
 		"unscheduled_items": "Nem ütemezett tételek",
-		"unscheduled_items_desc": "Ezek az elemek ehhez az utazáshoz kapcsolódnak, de még nem adták hozzá egy adott naphoz."
+		"unscheduled_items_desc": "Ezek az elemek ehhez az utazáshoz kapcsolódnak, de még nem adták hozzá egy adott naphoz.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

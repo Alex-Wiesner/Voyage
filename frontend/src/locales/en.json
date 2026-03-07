@@ -1096,7 +1096,9 @@
 		"failed_to_add_to_trip_context": "Failed to add item to trip context",
 		"remove_from_trip_context": "Remove from Context",
 		"drag_to_reorder": "Drag to reorder",
-		"add_to_day": "Add to day"
+		"add_to_day": "Add to day",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	},
 	"common": {
 		"show_less": "Hide details",

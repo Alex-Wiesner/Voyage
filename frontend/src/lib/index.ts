@@ -462,6 +462,7 @@ export let themes = [
 	{ name: 'night', label: 'Night' },
 	{ name: 'forest', label: 'Forest' },
 	{ name: 'aqua', label: 'Aqua' },
+	{ name: 'catppuccinMocha', label: 'Catppuccin Mocha' },
 	{ name: 'aestheticLight', label: 'Aesthetic Light' },
 	{ name: 'aestheticDark', label: 'Aesthetic Dark' },
 	{ name: 'northernLights', label: 'Northern Lights' }
@@ -601,6 +602,7 @@ export function getIsDarkMode() {
 		const isDark =
 			theme === 'dark' ||
 			theme === 'night' ||
+			theme === 'catppuccinMocha' ||
 			theme === 'aestheticDark' ||
 			theme === 'northernLights' ||
 			theme === 'forest' ||

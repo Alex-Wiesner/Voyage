@@ -481,6 +481,7 @@
 			"aqua": "Aqua",
 			"dark": "Donker",
 			"dim": "Duister",
+			"catppuccinMocha": "Catppuccin Mocha",
 			"forest": "Woud",
 			"light": "Licht",
 			"night": "Nacht",
@@ -1138,6 +1139,8 @@
 		"trip_context": "Reiscontext",
 		"trip_context_info": "Reiscontextitems zijn van toepassing op de hele reis, bijvoorbeeld locaties die de bestemming zelf vormen, algemene opmerkingen of paklijsten die belangrijk zijn voor de hele reis.",
 		"unscheduled_items": "Niet-geplande items",
-		"unscheduled_items_desc": "Deze items zijn gekoppeld aan deze reis, maar nog niet toegevoegd aan een specifieke dag."
+		"unscheduled_items_desc": "Deze items zijn gekoppeld aan deze reis, maar nog niet toegevoegd aan een specifieke dag.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

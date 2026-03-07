@@ -481,6 +481,7 @@
 			"aqua": "Vatten",
 			"dark": "Mörk",
 			"dim": "Dämpad",
+			"catppuccinMocha": "Catppuccin Mocha",
 			"forest": "Skog",
 			"light": "Ljus",
 			"night": "Natt",
@@ -1138,6 +1139,8 @@
 		"trip_context": "Resans sammanhang",
 		"trip_context_info": "Resans kontextobjekt gäller för hela resan – till exempel platser som är själva destinationen, allmänna anteckningar eller packlistor som är viktiga för hela resan.",
 		"unscheduled_items": "Oschemalagda objekt",
-		"unscheduled_items_desc": "Dessa objekt är länkade till denna resa men har inte lagts till en specifik dag än."
+		"unscheduled_items_desc": "Dessa objekt är länkade till denna resa men har inte lagts till en specifik dag än.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }

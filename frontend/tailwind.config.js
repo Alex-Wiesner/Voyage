@@ -61,6 +61,33 @@ export default {
 					fontFamily:
 						'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'
 				},
+				catppuccinMocha: {
+					primary: '#89b4fa',
+					'primary-focus': '#74c7ec',
+					'primary-content': '#1e1e2e',
+
+					secondary: '#f5c2e7',
+					'secondary-focus': '#cba6f7',
+					'secondary-content': '#1e1e2e',
+
+					accent: '#a6e3a1',
+					'accent-focus': '#94e2d5',
+					'accent-content': '#1e1e2e',
+
+					neutral: '#313244',
+					'neutral-focus': '#45475a',
+					'neutral-content': '#cdd6f4',
+
+					'base-100': '#1e1e2e',
+					'base-200': '#181825',
+					'base-300': '#11111b',
+					'base-content': '#cdd6f4',
+
+					info: '#89dceb',
+					success: '#a6e3a1',
+					warning: '#f9e2af',
+					error: '#f38ba8'
+				},
 				aestheticLight: {
 					primary: '#5a7c65',
 					'primary-focus': '#48604f',

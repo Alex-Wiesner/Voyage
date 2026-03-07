@@ -14,11 +14,14 @@ Voyage is a full-fledged travel companion. With Voyage, you can log your adventu
   - Upload trails and activities to your locations to remember your experiences with detailed maps and stats.
 - **Plan Your Next Trip** 📃: Take the guesswork out of planning your next adventure with an easy-to-use itinerary planner.
   - Itineraries can be created for any number of days and can include multiple destinations.
+  - A timeline-style day view shows ordered stops with numbered markers, compact transportation connector rows (mode, duration, distance), and inline add-place rows per day.
+  - Day-level quick actions include Auto-fill (to populate an empty itinerary from dated records) and an Optimize placeholder for future route optimization.
   - Itineraries include many planning features like flight information, notes, checklists, and links to external resources.
   - Itineraries can be shared with friends and family for collaborative planning.
 - **Share Your Experiences** 📸: Share your adventures with friends and family and collaborate on trips together.
   - Locations and itineraries can be shared via a public link or directly with other Voyage users.
   - Collaborators can view and edit shared itineraries (collections), making planning a breeze.
+- **Customizable Themes** 🎨: Choose from 10 built-in themes including Light, Dark, Dim, Night, Forest, Aqua, Catppuccin Mocha, Aesthetic Light, Aesthetic Dark, and Northern Lights. Theme selection persists across sessions.
 
 ## Why Voyage?
 

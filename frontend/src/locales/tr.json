@@ -25,7 +25,8 @@
 			"aestheticDark": "Estetik Karanlık",
 			"aqua": "Su",
 			"northernLights": "Kuzey Işıkları",
-			"dim": "Loş"
+			"dim": "Loş",
+			"catppuccinMocha": "Catppuccin Mocha"
 		},
 		"navigation": "Navigasyon",
 		"worldtravel": "Dünya Seyahati"
@@ -1138,6 +1139,8 @@
 		"trip_context": "Seyahat İçeriği",
 		"trip_context_info": "Seyahat bağlamı öğeleri seyahatin tamamı için geçerlidir; örneğin varış noktasının kendisi olan konumlar, genel notlar veya seyahatin tamamı için önemli olan paket listeleri.",
 		"unscheduled_items": "Planlanmamış Öğeler",
-		"unscheduled_items_desc": "Bu öğeler bu geziye bağlı ancak henüz belirli bir güne eklenmedi."
+		"unscheduled_items_desc": "Bu öğeler bu geziye bağlı ancak henüz belirli bir güne eklenmedi.",
+		"optimize": "Optimize",
+		"add_place": "+ Add place"
 	}
 }
