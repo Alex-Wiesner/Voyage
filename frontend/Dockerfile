@@ -1,5 +1,5 @@
 # Use this image as the platform to build the app
-FROM node:22-alpine AS external-website
+FROM node:22-alpine AS builder
 
 # Metadata labels for the AdventureLog image
 LABEL maintainer="Sean Morley" \
@@ -40,6 +40,28 @@ RUN rm -f .env
 RUN pnpm run build
 
 # Make startup script executable
+RUN chmod +x ./startup.sh
+
+# Keep only production dependencies for runtime image
+RUN CI=true pnpm prune --prod
+
+# Runtime image contains only built app + runtime deps
+FROM node:22-alpine AS runtime
+
+WORKDIR /app
+
+# Upgrade zlib and remove npm toolchain from runtime image
+RUN apk upgrade --no-cache zlib \
+    && rm -f /usr/local/bin/npm /usr/local/bin/npx \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack
+
+# Copy build artifacts and production runtime dependencies
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/startup.sh ./startup.sh
+
+# Ensure startup script is executable
 RUN chmod +x ./startup.sh
 
 # Change to non-root user for security

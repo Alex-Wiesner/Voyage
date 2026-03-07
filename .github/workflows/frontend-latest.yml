@@ -36,6 +36,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Set lower case owner name
+        id: repo_owner
+        run: |
+          LOWER_OWNER="${OWNER,,}"
+          echo "REPO_OWNER=${LOWER_OWNER}" >>"$GITHUB_ENV"
+          echo "repo_owner=${LOWER_OWNER}" >>"$GITHUB_OUTPUT"
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
       - name: Build and push latest Docker image with BuildKit cache
         uses: docker/build-push-action@v5
         with:
@@ -43,12 +52,12 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ steps.repo_owner.outputs.repo_owner }}/${{ env.IMAGE_NAME }}:latest
           cache-from: |
-            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:buildcache
+            type=registry,ref=ghcr.io/${{ steps.repo_owner.outputs.repo_owner }}/${{ env.IMAGE_NAME }}:buildcache
             type=local,src=/tmp/.buildx-cache
           cache-to: |
-            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+            type=registry,ref=ghcr.io/${{ steps.repo_owner.outputs.repo_owner }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
             type=local,dest=/tmp/.buildx-cache,mode=max
         env:
           DOCKER_BUILDKIT: 1
