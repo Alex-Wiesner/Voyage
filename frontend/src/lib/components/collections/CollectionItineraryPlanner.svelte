@@ -55,7 +55,8 @@
 		date: string;
 		displayDate: string;
 		items: ResolvedItineraryItem[];
-		boundaryLodgingItem: ResolvedItineraryItem | null; // Displayed as day start + end anchors
+		preTimelineLodging: ResolvedItineraryItem | null; // Checkout-side lodging shown before timeline
+		postTimelineLodging: ResolvedItineraryItem | null; // Checkin-side lodging shown after timeline
 		overnightLodging: Lodging[]; // Lodging where guest is staying overnight (not check-in day)
 		globalDatedItems: ResolvedItineraryItem[]; // Trip-wide items that still carry a date
 		dayMetadata: CollectionItineraryDay | null; // Day name and description
@@ -562,44 +563,113 @@
 		return null;
 	}
 
-	function getBoundaryLodgingItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
-		for (const item of items) {
-			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) continue;
-			if ((item.item?.type || '') === 'lodging') return item;
+	function getResolvedScheduledLodgingItem(
+		collection: Collection,
+		lodging: Lodging
+	): ResolvedItineraryItem | null {
+		const sourceItineraryItem = collection.itinerary?.find((item) => {
+			const objectType = item.item?.type || '';
+			return objectType === 'lodging' && item.object_id === lodging.id;
+		});
+
+		if (!sourceItineraryItem) return null;
+
+		return {
+			...sourceItineraryItem,
+			resolvedObject: lodging
+		};
+	}
+
+	function getDirectionalBoundaryLodging(
+		collection: Collection,
+		dateISO: string
+	): {
+		preTimelineLodging: ResolvedItineraryItem | null;
+		postTimelineLodging: ResolvedItineraryItem | null;
+	} {
+		const targetDate = DateTime.fromISO(dateISO).startOf('day');
+		let preTimelineLodging: ResolvedItineraryItem | null = null;
+		let postTimelineLodging: ResolvedItineraryItem | null = null;
+
+		for (const lodging of collection.lodging || []) {
+			if (!lodging.check_in || !lodging.check_out) continue;
+
+			const checkIn = DateTime.fromISO(lodging.check_in.split('T')[0]).startOf('day');
+			const checkOut = DateTime.fromISO(lodging.check_out.split('T')[0]).startOf('day');
+
+			const isPreTimelineContext = targetDate > checkIn && targetDate <= checkOut;
+			const isPostTimelineContext = targetDate >= checkIn && targetDate < checkOut;
+
+			if (!isPreTimelineContext && !isPostTimelineContext) continue;
+
+			const resolvedLodgingItem = getResolvedScheduledLodgingItem(collection, lodging);
+			if (!resolvedLodgingItem) continue;
+
+			if (!preTimelineLodging && isPreTimelineContext) {
+				preTimelineLodging = resolvedLodgingItem;
+			}
+
+			if (!postTimelineLodging && isPostTimelineContext) {
+				postTimelineLodging = resolvedLodgingItem;
+			}
+
+			if (preTimelineLodging && postTimelineLodging) break;
 		}
 
-		return null;
+		return { preTimelineLodging, postTimelineLodging };
 	}
 
 	function getDayTimelineItems(day: DayGroup): ResolvedItineraryItem[] {
-		if (!day.boundaryLodgingItem) return day.items;
-		return day.items.filter((item) => item.id !== day.boundaryLodgingItem?.id);
+		const boundaryIds = new Set(
+			[day.preTimelineLodging?.id, day.postTimelineLodging?.id].filter(
+				(id): id is string => !!id
+			)
+		);
+
+		if (boundaryIds.size === 0) return day.items;
+		return day.items.filter((item) => !boundaryIds.has(item.id));
 	}
 
 	function shouldShowOvernightSummary(day: DayGroup): boolean {
-		return day.overnightLodging.length > 0 && !day.boundaryLodgingItem?.resolvedObject;
+		return (
+			day.overnightLodging.length > 0 &&
+			!day.preTimelineLodging?.resolvedObject &&
+			!day.postTimelineLodging?.resolvedObject
+		);
 	}
 
-	function reinsertBoundaryLodgingItem(
+	function reinsertBoundaryLodgingItems(
 		day: DayGroup,
 		timelineItems: ResolvedItineraryItem[]
 	): ResolvedItineraryItem[] {
-		if (!day.boundaryLodgingItem) return timelineItems;
+		const boundaryCandidates = [day.preTimelineLodging, day.postTimelineLodging].filter(
+			(item, index, list): item is ResolvedItineraryItem =>
+				!!item && list.findIndex((candidate) => candidate?.id === item.id) === index
+		);
 
-		const boundaryItem = day.boundaryLodgingItem;
-		if (timelineItems.some((item) => item.id === boundaryItem.id)) return timelineItems;
+		if (boundaryCandidates.length === 0) return timelineItems;
 
-		const previousBoundaryIndex = day.items.findIndex((item) => item.id === boundaryItem.id);
-		const insertIndex =
-			previousBoundaryIndex >= 0
-				? Math.min(previousBoundaryIndex, timelineItems.length)
-				: Math.min(0, timelineItems.length);
+		let restoredItems = [...timelineItems];
 
-		return [
-			...timelineItems.slice(0, insertIndex),
-			boundaryItem,
-			...timelineItems.slice(insertIndex)
-		];
+		for (const boundaryItem of boundaryCandidates) {
+			const existedOnThisDay = day.items.some((item) => item.id === boundaryItem.id);
+			if (!existedOnThisDay) continue;
+			if (restoredItems.some((item) => item.id === boundaryItem.id)) continue;
+
+			const previousBoundaryIndex = day.items.findIndex((item) => item.id === boundaryItem.id);
+			const insertIndex =
+				previousBoundaryIndex >= 0
+					? Math.min(previousBoundaryIndex, restoredItems.length)
+					: restoredItems.length;
+
+			restoredItems = [
+				...restoredItems.slice(0, insertIndex),
+				boundaryItem,
+				...restoredItems.slice(insertIndex)
+			];
+		}
+
+		return restoredItems;
 	}
 
 	function getLocationConnectorKey(
@@ -667,8 +737,8 @@
 			const firstLocationItem = getFirstLocationItem(dayGroup.items);
 			const lastLocationItem = getLastLocationItem(dayGroup.items);
 
-			if (dayGroup.boundaryLodgingItem && firstLocationItem) {
-				pushPair(getConnectorPair(dayGroup.boundaryLodgingItem, firstLocationItem));
+			if (dayGroup.preTimelineLodging && firstLocationItem) {
+				pushPair(getConnectorPair(dayGroup.preTimelineLodging, firstLocationItem));
 			}
 
 			for (let index = 0; index < dayTimelineItems.length - 1; index += 1) {
@@ -680,8 +750,8 @@
 				pushPair(getConnectorPair(currentItem, nextLocationItem));
 			}
 
-			if (dayGroup.boundaryLodgingItem && lastLocationItem) {
-				pushPair(getConnectorPair(lastLocationItem, dayGroup.boundaryLodgingItem));
+			if (dayGroup.postTimelineLodging && lastLocationItem) {
+				pushPair(getConnectorPair(lastLocationItem, dayGroup.postTimelineLodging));
 			}
 		}
 
@@ -1289,7 +1359,9 @@
 			});
 
 		// Sort items within each date group by order
-		grouped.forEach((items) => items.sort((a, b) => a.order - b.order));
+		grouped.forEach((items) => {
+			items.sort((a, b) => a.order - b.order);
+		});
 
 		return grouped;
 	}
@@ -1362,8 +1434,11 @@
 		for (let dt = start; dt <= end; dt = dt.plus({ days: 1 })) {
 			const iso = dt.toISODate();
 			const items = (grouped.get(iso) || []).sort((a, b) => a.order - b.order);
-			const boundaryLodgingItem = getBoundaryLodgingItem(items);
 			const overnightLodging = getOvernightLodgingForDate(collection, iso);
+			const { preTimelineLodging, postTimelineLodging } = getDirectionalBoundaryLodging(
+				collection,
+				iso
+			);
 			const globalDatedItems = globalByDate.get(iso) || [];
 
 			// Find day metadata for this date
@@ -1373,7 +1448,8 @@
 				date: iso,
 				displayDate: dt.toFormat('cccc, LLLL d, yyyy'),
 				items,
-				boundaryLodgingItem,
+				preTimelineLodging,
+				postTimelineLodging,
 				overnightLodging,
 				globalDatedItems,
 				dayMetadata
@@ -1441,7 +1517,7 @@
 		const day = days[dayIndex];
 		if (!day) return;
 		// Update the local state immediately for smooth drag feedback
-		days[dayIndex].items = reinsertBoundaryLodgingItem(day, newItems);
+		days[dayIndex].items = reinsertBoundaryLodgingItems(day, newItems);
 		days = [...days];
 	}
 
@@ -1474,7 +1550,7 @@
 		if (!day) return;
 
 		// Update local state
-		days[dayIndex].items = reinsertBoundaryLodgingItem(day, newItems);
+		days[dayIndex].items = reinsertBoundaryLodgingItems(day, newItems);
 		days = [...days];
 
 		// Save to backend if item was actually moved (not just considered)
@@ -2384,30 +2460,38 @@
 			{@const weekday = DateTime.fromISO(day.date).toFormat('ccc')}
 			{@const dayOfMonth = DateTime.fromISO(day.date).toFormat('d')}
 			{@const monthAbbrev = DateTime.fromISO(day.date).toFormat('LLL')}
-			{@const boundaryLodgingItem = day.boundaryLodgingItem}
+			{@const preTimelineLodging = day.preTimelineLodging}
+			{@const postTimelineLodging = day.postTimelineLodging}
+			{@const dayTimelineItems = getDayTimelineItems(day)}
 			{@const firstLocationItem = getFirstLocationItem(day.items)}
 			{@const lastLocationItem = getLastLocationItem(day.items)}
+			{@const noLocationsInDay = !firstLocationItem && !lastLocationItem}
+			{@const shouldCollapseBoundaryLodging =
+				noLocationsInDay &&
+				preTimelineLodging?.id &&
+				postTimelineLodging?.id &&
+				preTimelineLodging.id === postTimelineLodging.id}
 			{@const startBoundaryConnector =
-				boundaryLodgingItem && firstLocationItem
-					? getLocationConnector(boundaryLodgingItem, firstLocationItem)
+				preTimelineLodging && firstLocationItem
+					? getLocationConnector(preTimelineLodging, firstLocationItem)
 					: null}
 			{@const startBoundaryDirectionsUrl =
-				boundaryLodgingItem && firstLocationItem
+				preTimelineLodging && firstLocationItem
 					? buildDirectionsUrl(
-							boundaryLodgingItem,
+							preTimelineLodging,
 							firstLocationItem,
 							startBoundaryConnector?.mode || 'walking'
 						)
 					: null}
 			{@const endBoundaryConnector =
-				boundaryLodgingItem && lastLocationItem
-					? getLocationConnector(lastLocationItem, boundaryLodgingItem)
+				postTimelineLodging && lastLocationItem
+					? getLocationConnector(lastLocationItem, postTimelineLodging)
 					: null}
 			{@const endBoundaryDirectionsUrl =
-				boundaryLodgingItem && lastLocationItem
+				postTimelineLodging && lastLocationItem
 					? buildDirectionsUrl(
 							lastLocationItem,
-							boundaryLodgingItem,
+							postTimelineLodging,
 							endBoundaryConnector?.mode || 'walking'
 						)
 					: null}
@@ -2552,13 +2636,13 @@
 
 					<!-- Day Items (vertical timeline with ordered stops) -->
 					<div>
-						{#if boundaryLodgingItem?.resolvedObject}
+						{#if preTimelineLodging?.resolvedObject}
 							<div class="mb-3">
 								<LodgingCard
-									lodging={boundaryLodgingItem.resolvedObject}
+									lodging={preTimelineLodging.resolvedObject}
 									{user}
 									{collection}
-									itineraryItem={boundaryLodgingItem}
+									itineraryItem={preTimelineLodging}
 									showImage={false}
 									compact={true}
 									on:delete={handleItemDelete}
@@ -2627,7 +2711,7 @@
 							</div>
 						{/if}
 
-						{#if getDayTimelineItems(day).length === 0 && !boundaryLodgingItem?.resolvedObject}
+						{#if dayTimelineItems.length === 0 && !preTimelineLodging?.resolvedObject && !postTimelineLodging?.resolvedObject}
 							<div
 								class="card bg-base-100 shadow-sm border border-dashed border-base-300 p-4 text-center"
 							>
@@ -2639,7 +2723,7 @@
 						{:else}
 							<div
 								use:dndzone={{
-									items: getDayTimelineItems(day),
+									items: dayTimelineItems,
 									flipDurationMs,
 									dropTargetStyle: { outline: 'none', border: 'none' },
 									dragDisabled: isSavingOrder || !canModify,
@@ -2649,11 +2733,11 @@
 								on:finalize={(e) => handleDndFinalize(dayIndex, e)}
 								class="space-y-3"
 							>
-								{#each getDayTimelineItems(day) as item, index (item.id)}
+								{#each dayTimelineItems as item, index (item.id)}
 									{@const objectType = item.item?.type || ''}
 									{@const resolvedObj = item.resolvedObject}
 									{@const multiDay = isMultiDay(item)}
-									{@const nextLocationItem = findNextLocationItem(getDayTimelineItems(day), index)}
+									{@const nextLocationItem = findNextLocationItem(dayTimelineItems, index)}
 									{@const locationConnector = getLocationConnector(item, nextLocationItem)}
 									{@const directionsUrl = buildDirectionsUrl(
 										item,
@@ -2677,7 +2761,7 @@
 													>
 														{timelineNumber}
 													</div>
-													{#if index < getDayTimelineItems(day).length - 1}
+													{#if index < dayTimelineItems.length - 1}
 														<div class="w-px bg-base-300 flex-1 min-h-10 mt-1"></div>
 													{/if}
 												</div>
@@ -2962,7 +3046,7 @@
 							</div>
 						{/if}
 
-						{#if boundaryLodgingItem?.resolvedObject}
+						{#if postTimelineLodging?.resolvedObject && !shouldCollapseBoundaryLodging}
 							<div class="mt-3">
 								{#if endBoundaryConnector}
 									<div
@@ -3017,10 +3101,10 @@
 								{/if}
 
 								<LodgingCard
-									lodging={boundaryLodgingItem.resolvedObject}
+									lodging={postTimelineLodging.resolvedObject}
 									{user}
 									{collection}
-									itineraryItem={boundaryLodgingItem}
+									itineraryItem={postTimelineLodging}
 									showImage={false}
 									compact={true}
 									on:delete={handleItemDelete}

@@ -69,6 +69,14 @@
 		return stars;
 	}
 
+	export let lodging: Lodging;
+	export let user: User | null = null;
+	export let collection: Collection | null = null;
+	export let readOnly: boolean = false;
+	export let itineraryItem: CollectionItineraryItem | null = null;
+	export let showImage: boolean = true;
+	export let compact: boolean = false;
+
 	const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
 	const getTimezoneLabel = (zone?: string | null) => zone ?? localTimeZone;
 	const getTimezoneTip = (zone?: string | null) => {
@@ -85,23 +93,33 @@
 	};
 	const hasTimePortion = (date: string | null) => !!date && !isAllDay(date);
 	const isTimedStay = (date: string | null) => hasTimePortion(date);
+	const formatStayDateTime = (date: string | null) => {
+		if (!date) return null;
+		return isAllDay(date) ? formatAllDayDate(date) : formatDateInTimezone(date, lodging.timezone);
+	};
 	$: lodgingPriceLabel = formatMoney(
 		toMoneyValue(lodging.price, lodging.price_currency, DEFAULT_CURRENCY)
 	);
+	$: compactStayMeta = [
+		lodging.check_in
+			? {
+				label: 'IN',
+				value: formatStayDateTime(lodging.check_in)
+			}
+			: null,
+		lodging.check_out
+			? {
+				label: 'OUT',
+				value: formatStayDateTime(lodging.check_out)
+			}
+			: null
+	].filter((entry): entry is { label: string; value: string | null } => Boolean(entry));
 
 	let showMoreDetails = false;
 	$: hasExpandableDetails = Boolean(
 		lodging.check_out && (isTimedStay(lodging.check_out) || isTimedStay(lodging.check_in))
 	);
 	$: if (!hasExpandableDetails) showMoreDetails = false;
-
-	export let lodging: Lodging;
-	export let user: User | null = null;
-	export let collection: Collection | null = null;
-	export let readOnly: boolean = false;
-	export let itineraryItem: CollectionItineraryItem | null = null;
-	export let showImage: boolean = true;
-	export let compact: boolean = false;
 
 	let isWarningModalOpen: boolean = false;
 
@@ -328,16 +346,50 @@
 			</div>
 		</div>
 
-		<!-- Location -->
-		{#if lodging.location}
-			<div class="flex items-center gap-2 text-sm text-base-content/70 min-w-0">
-				<MapMarker class="w-4 h-4 text-primary flex-shrink-0" />
-				<span class="truncate">{lodging.location}</span>
+		{#if compact}
+			<div class="flex items-start justify-between gap-2.5">
+				<div class="min-w-0 flex-1">
+					{#if lodging.location}
+						<div class="flex items-center gap-1.5 text-xs text-base-content/70 min-w-0">
+							<MapMarker class="w-4 h-4 text-primary flex-shrink-0" />
+							<span class="truncate">{lodging.location}</span>
+						</div>
+					{/if}
+				</div>
+
+				{#if compactStayMeta.length > 0}
+					<div
+						class="shrink-0 min-w-[8rem] rounded-md border border-base-200/70 bg-base-200/55 px-2 py-1.5"
+					>
+						<div class="space-y-1">
+							{#each compactStayMeta as stayMeta}
+								<div class="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-1 leading-tight">
+									<div class="text-[9px] font-medium uppercase tracking-[0.14em] text-base-content/50">
+										{stayMeta.label}
+									</div>
+									<div
+										class="overflow-hidden text-ellipsis whitespace-nowrap text-right text-[11px] font-medium font-mono tabular-nums text-base-content/80"
+									>
+										{stayMeta.value}
+									</div>
+								</div>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			</div>
+		{:else}
+			<!-- Location -->
+			{#if lodging.location}
+				<div class="flex items-center gap-2 text-sm text-base-content/70 min-w-0">
+					<MapMarker class="w-4 h-4 text-primary flex-shrink-0" />
+					<span class="truncate">{lodging.location}</span>
+				</div>
+			{/if}
 		{/if}
 
 		<!-- Check-in & Check-out Section -->
-		{#if lodging.check_in || lodging.check_out}
+		{#if !compact && (lodging.check_in || lodging.check_out)}
 			<div class="flex flex-col gap-1.5">
 				{#if lodging.check_in && lodging.check_out}
 					<!-- Both dates present -->
