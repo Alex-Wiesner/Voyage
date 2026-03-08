@@ -69,6 +69,7 @@ INSTALLED_APPS = (
     "worldtravel",
     "users",
     "integrations",
+    "chat",
     "mcp_server",
     "django.contrib.gis",
     # 'achievements', # Not done yet, will be added later in a future update

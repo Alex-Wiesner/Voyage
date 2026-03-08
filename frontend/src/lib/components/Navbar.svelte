@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	export let data: any;
 	import type { SubmitFunction } from '@sveltejs/kit';
+	import { mdiRobotOutline } from '@mdi/js';
 
 	import DotsHorizontal from '~icons/mdi/dots-horizontal';
 	import Calendar from '~icons/mdi/calendar';
@@ -111,7 +112,8 @@
 
 	type NavigationItem = {
 		path: string;
-		icon: any;
+		icon?: any;
+		iconPath?: string;
 		label: string;
 		external?: boolean;
 	};
@@ -120,6 +122,7 @@
 	const navigationItems: NavigationItem[] = [
 		{ path: '/locations', icon: MapMarker, label: 'locations.locations' },
 		{ path: '/collections', icon: FormatListBulletedSquare, label: 'navbar.collections' },
+		{ path: '/chat', iconPath: mdiRobotOutline, label: 'navbar.chat' },
 		{ path: '/invites', icon: AccountMultiple, label: 'invites.title' },
 		{ path: '/worldtravel', icon: Earth, label: 'navbar.worldtravel' },
 		{ path: '/map', icon: MapIcon, label: 'navbar.map' },
@@ -161,7 +164,13 @@
 									class="btn btn-ghost justify-start gap-3 w-full text-left rounded-xl"
 									class:btn-active={!item.external && $page.url.pathname === item.path}
 								>
-									<svelte:component this={item.icon} class="w-5 h-5" />
+									{#if item.icon}
+										<svelte:component this={item.icon} class="w-5 h-5" />
+									{:else if item.iconPath}
+										<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+											<path d={item.iconPath}></path>
+										</svg>
+									{/if}
 									{$t(item.label)}
 								</a>
 							</li>
@@ -233,7 +242,13 @@
 							class:bg-primary-10={!item.external && $page.url.pathname === item.path}
 							class:text-primary={!item.external && $page.url.pathname === item.path}
 						>
-							<svelte:component this={item.icon} class="w-4 h-4" />
+							{#if item.icon}
+								<svelte:component this={item.icon} class="w-4 h-4" />
+							{:else if item.iconPath}
+								<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+									<path d={item.iconPath}></path>
+								</svg>
+							{/if}
 							<span class="hidden xl:inline">{$t(item.label)}</span>
 						</a>
 					</li>

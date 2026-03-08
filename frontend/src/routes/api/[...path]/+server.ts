@@ -86,10 +86,19 @@ async function handleRequest(
 			});
 		}
 
-		const responseData = await response.arrayBuffer();
-		// Create a new Headers object without the 'set-cookie' header
+		const contentType = response.headers.get('content-type') || '';
 		const cleanHeaders = new Headers(response.headers);
 		cleanHeaders.delete('set-cookie');
+
+		// Stream SSE responses through without buffering
+		if (contentType.includes('text/event-stream')) {
+			return new Response(response.body, {
+				status: response.status,
+				headers: cleanHeaders
+			});
+		}
+
+		const responseData = await response.arrayBuffer();
 
 		return new Response(responseData, {
 			status: response.status,

@@ -1,6 +1,7 @@
 {
 	"navbar": {
 		"collections": "Collections",
+		"chat": "Travel Agent",
 		"map": "Map",
 		"users": "Users",
 		"search": "Search",
@@ -30,6 +31,20 @@
 			"catppuccinMocha": "Catppuccin Mocha"
 		},
 		"navigation": "Navigation"
+	},
+	"chat": {
+		"title": "Travel Agent",
+		"conversations": "Conversations",
+		"new_conversation": "New Conversation",
+		"untitled": "Untitled Conversation",
+		"no_conversations": "No conversations yet. Start chatting!",
+		"welcome_title": "Welcome to the Travel Agent",
+		"welcome_message": "I can help you discover amazing places, plan your trips, and organize your itineraries. What would you like to explore?",
+		"input_placeholder": "Ask me about travel destinations, plan a trip, or get recommendations...",
+		"send": "Send",
+		"delete_conversation": "Delete Conversation",
+		"connection_error": "Connection error. Please try again.",
+		"no_api_key": "No API key found. Please add one in Settings."
 	},
 	"about": {
 		"about": "About",

@@ -41,6 +41,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@mdi/js": "^7.4.47",
 		"@lukulent/svelte-umami": "^0.0.3",
 		"dompurify": "^3.3.2",
 		"emoji-picker-element": "^1.29.1",
