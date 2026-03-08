@@ -108,6 +108,10 @@ Run these commands in order:
 - **AVOID**: Local Python development (pip install fails with network timeouts)
 - **AVOID**: Trying to run backend outside Docker (requires complex GDAL/PostGIS setup)
 
+### Branch Hygiene
+- **ALWAYS** commit and merge completed feature branches promptly once validation passes.
+- Do not leave finished work lingering in long-lived feature branches or worktrees.
+
 ### Expected Test Failures
 - Frontend check: 3 errors and 19 warnings expected (accessibility and TypeScript issues)
 - Backend tests: 2 out of 3 Django tests fail (API endpoint issues) - **DO NOT fix unrelated test failures**

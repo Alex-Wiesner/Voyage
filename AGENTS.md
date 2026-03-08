@@ -64,3 +64,4 @@ Run in this order:
 ## Conventions
 - Do **not** attempt to fix known test/configuration issues as part of feature work.
 - Use `bun` for frontend commands, `uv` for local Python tooling where applicable.
+- Commit and merge completed feature branches promptly once validation passes (avoid leaving finished work unmerged).
