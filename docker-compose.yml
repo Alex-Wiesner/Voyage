@@ -2,7 +2,6 @@ services:
   web:
     #build: ./frontend/
     image: ghcr.io/alex-wiesner/voyage-frontend:latest
-    container_name: voyage-frontend
     restart: unless-stopped
     env_file: .env
     ports:
@@ -12,7 +11,6 @@ services:
 
   db:
     image: postgis/postgis:16-3.5
-    container_name: voyage-db
     restart: unless-stopped
     env_file: .env
     volumes:
@@ -21,7 +19,6 @@ services:
   server:
     #build: ./backend/
     image: ghcr.io/alex-wiesner/voyage-backend:latest
-    container_name: voyage-backend
     restart: unless-stopped
     env_file: .env
     ports:
