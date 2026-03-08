@@ -993,8 +993,8 @@
 		loadDayTemperatures(days, fetchVersion);
 	}
 
-	function formatDayTemperature(day: DayGroup): string {
-		const temperature = dayTemperatures[day.date];
+	function formatDayTemperature(day: DayGroup, temps: Record<string, DayTemperature>): string {
+		const temperature = temps[day.date];
 		if (!temperature?.available || temperature.temperature_c === null) {
 			return getI18nText('itinerary.temperature_unavailable', 'Temperature unavailable');
 		}
@@ -1099,6 +1099,7 @@
 	}
 
 	function optimizeDayOrder(dayIndex: number) {
+		console.info('[optimize] optimizeDayOrder called for day', dayIndex);
 		if (!canModify || isSavingOrder) return;
 
 		const day = days[dayIndex];
@@ -1135,7 +1136,21 @@
 		});
 
 		if (movableCoordinateItems.length < 2) {
-			addToast('info', getI18nText('itinerary.optimize_not_enough_items', 'Not enough stops to optimize'));
+			console.warn('[optimize] Not enough movable coordinate items:', {
+				totalDayItems: nonShadowItems.length,
+				anchorCount: anchorEntries.length,
+				movableWithCoords: movableCoordinateItems.length,
+				movableWithoutCoords: nonShadowItems.filter(
+					(item, i) => !anchorIndexSet.has(i) && !getCoordinatesFromItineraryItem(item)
+				).length
+			});
+			addToast(
+				'warning',
+				getI18nText(
+					'itinerary.optimize_not_enough_items',
+					'Not enough items with location data to optimize'
+				)
+			);
 			return;
 		}
 
@@ -1273,11 +1288,12 @@
 
 	function getLocationConnector(
 		currentItem: ResolvedItineraryItem,
-		nextItem: ResolvedItineraryItem | null
+		nextItem: ResolvedItineraryItem | null,
+		metricsMap: Record<string, LocationConnector>
 	): LocationConnector | null {
 		const key = getLocationConnectorKey(currentItem, nextItem);
-		if (key && connectorMetricsMap[key]) {
-			return connectorMetricsMap[key];
+		if (key && metricsMap[key]) {
+			return metricsMap[key];
 		}
 
 		return getFallbackLocationConnector(currentItem, nextItem);
@@ -2808,7 +2824,7 @@
 				preTimelineLodging.id === postTimelineLodging.id}
 			{@const startBoundaryConnector =
 				preTimelineLodging && firstConnectableItem
-					? getLocationConnector(preTimelineLodging, firstConnectableItem)
+					? getLocationConnector(preTimelineLodging, firstConnectableItem, connectorMetricsMap)
 					: null}
 			{@const startBoundaryDirectionsUrl =
 				preTimelineLodging && firstConnectableItem
@@ -2820,7 +2836,7 @@
 					: null}
 			{@const endBoundaryConnector =
 				postTimelineLodging && lastConnectableItem
-					? getLocationConnector(lastConnectableItem, postTimelineLodging)
+					? getLocationConnector(lastConnectableItem, postTimelineLodging, connectorMetricsMap)
 					: null}
 			{@const endBoundaryDirectionsUrl =
 				postTimelineLodging && lastConnectableItem
@@ -2842,7 +2858,7 @@
 								<div class="text-xs opacity-70">{weekday}</div>
 								<div class="text-2xl font-bold -mt-1">{dayOfMonth}</div>
 								<div class="text-xs opacity-70">{monthAbbrev}</div>
-								<div class="text-[10px] opacity-80 mt-1">{formatDayTemperature(day)}</div>
+								<div class="text-[10px] opacity-80 mt-1">{formatDayTemperature(day, dayTemperatures)}</div>
 							</div>
 						</div>
 
@@ -3075,7 +3091,7 @@
 									{@const resolvedObj = item.resolvedObject}
 									{@const multiDay = isMultiDay(item)}
 									{@const nextConnectableItem = findNextConnectableItem(dayTimelineItems, index)}
-									{@const locationConnector = getLocationConnector(item, nextConnectableItem)}
+									{@const locationConnector = getLocationConnector(item, nextConnectableItem, connectorMetricsMap)}
 									{@const directionsUrl = buildDirectionsUrl(
 										item,
 										nextConnectableItem,
