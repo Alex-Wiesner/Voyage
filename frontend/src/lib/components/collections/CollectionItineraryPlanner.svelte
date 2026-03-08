@@ -62,6 +62,11 @@
 		dayMetadata: CollectionItineraryDay | null; // Day name and description
 	};
 
+	type DayTemperature = {
+		available: boolean;
+		temperature_c: number | null;
+	};
+
 	$: days = groupItemsByDay(collection);
 	$: unscheduledItems = getUnscheduledItems(collection);
 	// Trip-wide (global) itinerary items
@@ -77,6 +82,8 @@
 	let isSavingOrder = false;
 	// Which day (ISO date string) is currently being saved. Used to show per-day spinner.
 	let savingDay: string | null = null;
+	let dayTemperatures: Record<string, DayTemperature> = {};
+	let activeTemperatureFetchVersion = 0;
 
 	// Check if auto-generate is available (only for users with modify permission)
 	$: canAutoGenerate =
@@ -480,6 +487,23 @@
 		return Number.isFinite(distanceKm) ? distanceKm : null;
 	}
 
+	function haversineDistanceBetweenCoordinates(
+		from: { latitude: number; longitude: number },
+		to: { latitude: number; longitude: number }
+	): number {
+		const earthRadiusKm = 6371;
+		const latDelta = toRadians(to.latitude - from.latitude);
+		const lonDelta = toRadians(to.longitude - from.longitude);
+		const fromLat = toRadians(from.latitude);
+		const toLat = toRadians(to.latitude);
+
+		const a =
+			Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
+			Math.cos(fromLat) * Math.cos(toLat) * Math.sin(lonDelta / 2) * Math.sin(lonDelta / 2);
+		const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+		return earthRadiusKm * c;
+	}
+
 	function formatTravelDuration(minutes: number): string {
 		const totalMinutes = Math.max(0, Math.round(minutes));
 		const hours = Math.floor(totalMinutes / 60);
@@ -542,6 +566,81 @@
 		if (latitude === null || longitude === null) return null;
 
 		return { latitude, longitude };
+	}
+
+	function getDayWeatherAnchor(day: DayGroup): { latitude: number; longitude: number } | null {
+		for (const item of day.items) {
+			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) continue;
+			const coordinates = getCoordinatesFromItineraryItem(item);
+			if (coordinates) return coordinates;
+		}
+
+		const boundaryCandidates = [day.preTimelineLodging, day.postTimelineLodging];
+		for (const boundary of boundaryCandidates) {
+			const coordinates = getCoordinatesFromItineraryItem(boundary);
+			if (coordinates) return coordinates;
+		}
+
+		return null;
+	}
+
+	async function loadDayTemperatures(dayGroups: DayGroup[], fetchVersion: number) {
+		if (dayGroups.length === 0) {
+			if (fetchVersion === activeTemperatureFetchVersion) {
+				dayTemperatures = {};
+			}
+			return;
+		}
+
+		const payloadDays = dayGroups
+			.map((day) => {
+				const anchor = getDayWeatherAnchor(day);
+				if (!anchor) return null;
+				return {
+					date: day.date,
+					latitude: anchor.latitude,
+					longitude: anchor.longitude
+				};
+			})
+			.filter((entry): entry is { date: string; latitude: number; longitude: number } => !!entry);
+
+		if (payloadDays.length === 0) {
+			if (fetchVersion === activeTemperatureFetchVersion) {
+				dayTemperatures = {};
+			}
+			return;
+		}
+
+		try {
+			const response = await fetch('/api/weather/daily-temperatures/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ days: payloadDays })
+			});
+
+			if (!response.ok) throw new Error('Failed to load day temperatures');
+
+			const data = await response.json();
+			if (fetchVersion !== activeTemperatureFetchVersion) return;
+
+			const nextMap: Record<string, DayTemperature> = {};
+			for (const result of data?.results || []) {
+				if (!result?.date) continue;
+				nextMap[result.date] = {
+					available: !!result.available,
+					temperature_c:
+						typeof result.temperature_c === 'number' ? result.temperature_c : null
+				};
+			}
+
+			dayTemperatures = nextMap;
+		} catch (error) {
+			if (fetchVersion !== activeTemperatureFetchVersion) return;
+			console.error('Failed to fetch day temperatures:', error);
+			dayTemperatures = {};
+		}
 	}
 
 	function getFirstLocationItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
@@ -866,6 +965,100 @@
 		activeConnectorFetchVersion += 1;
 		const fetchVersion = activeConnectorFetchVersion;
 		loadConnectorMetrics(connectorPairs, fetchVersion);
+	}
+
+	$: {
+		const daySnapshot = days
+			.map((day) => `${day.date}:${day.items.map((item) => item.id).join(',')}`)
+			.join('|');
+		daySnapshot;
+		activeTemperatureFetchVersion += 1;
+		const fetchVersion = activeTemperatureFetchVersion;
+		loadDayTemperatures(days, fetchVersion);
+	}
+
+	function formatDayTemperature(day: DayGroup): string {
+		const temperature = dayTemperatures[day.date];
+		if (!temperature?.available || temperature.temperature_c === null) {
+			return getI18nText('itinerary.temperature_unavailable', 'Temperature unavailable');
+		}
+
+		const rounded = Math.round(temperature.temperature_c);
+		return `${rounded}°C`;
+	}
+
+	function optimizeDayOrder(dayIndex: number) {
+		if (!canModify || isSavingOrder) return;
+
+		const day = days[dayIndex];
+		if (!day) return;
+
+		const sortableItems = day.items.filter((item) => {
+			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) return false;
+			return !!getCoordinatesFromItineraryItem(item);
+		});
+
+		const nonSortableItems = day.items.filter((item) => {
+			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) return true;
+			return !getCoordinatesFromItineraryItem(item);
+		});
+
+		if (sortableItems.length < 2) {
+			addToast('info', getI18nText('itinerary.optimize_not_enough_items', 'Not enough stops to optimize'));
+			return;
+		}
+
+		const remaining = [...sortableItems];
+		const sorted: ResolvedItineraryItem[] = [];
+
+		const firstItem = remaining.shift();
+		if (!firstItem) return;
+		sorted.push(firstItem);
+
+		while (remaining.length > 0) {
+			const last = sorted[sorted.length - 1];
+			const lastCoords = getCoordinatesFromItineraryItem(last);
+			if (!lastCoords) break;
+
+			let nearestIndex = 0;
+			let nearestDistance = Number.POSITIVE_INFINITY;
+
+			for (let index = 0; index < remaining.length; index += 1) {
+				const candidate = remaining[index];
+				const candidateCoords = getCoordinatesFromItineraryItem(candidate);
+				if (!candidateCoords) continue;
+
+				const distance = haversineDistanceBetweenCoordinates(lastCoords, candidateCoords);
+
+				if (distance < nearestDistance) {
+					nearestDistance = distance;
+					nearestIndex = index;
+				}
+			}
+
+			sorted.push(remaining.splice(nearestIndex, 1)[0]);
+		}
+
+		days[dayIndex].items = [...sorted, ...nonSortableItems];
+		days = [...days];
+
+		isSavingOrder = true;
+		savingDay = day.date;
+		saveReorderedItems()
+			.then((saved) => {
+				if (saved) {
+					addToast('success', getI18nText('itinerary.optimize_success', 'Day optimized'));
+					return;
+				}
+				addToast('error', getI18nText('itinerary.optimize_failed', 'Failed to optimize day'));
+			})
+			.catch(() => {
+				addToast('error', getI18nText('itinerary.optimize_failed', 'Failed to optimize day'));
+			})
+			.finally(() => {
+				isSavingOrder = false;
+				savingDay = null;
+			});
 	}
 
 	function getFallbackLocationConnector(
@@ -1573,7 +1766,7 @@
 		}
 	}
 
-	async function saveReorderedItems() {
+	async function saveReorderedItems(): Promise<boolean> {
 		try {
 			// Collect all items across all days with their new positions
 			const dayUpdates = days.flatMap((day) =>
@@ -1593,7 +1786,7 @@
 			const itemsToUpdate = [...dayUpdates, ...globalUpdates];
 
 			if (itemsToUpdate.length === 0) {
-				return;
+				return true;
 			}
 
 			const response = await fetch('/api/itineraries/reorder/', {
@@ -1633,10 +1826,12 @@
 				.filter((it) => it.is_global)
 				.map((it) => resolveItineraryItem(it, collection))
 				.sort((a, b) => a.order - b.order);
+			return true;
 		} catch (error) {
 			console.error('Error saving itinerary order:', error);
 			// Optionally show error notification to user
 			alert('Failed to save itinerary order. Please try again.');
+			return false;
 		}
 	}
 
@@ -2507,6 +2702,7 @@
 								<div class="text-xs opacity-70">{weekday}</div>
 								<div class="text-2xl font-bold -mt-1">{dayOfMonth}</div>
 								<div class="text-xs opacity-70">{monthAbbrev}</div>
+								<div class="text-[10px] opacity-80 mt-1">{formatDayTemperature(day)}</div>
 							</div>
 						</div>
 
@@ -2625,8 +2821,9 @@
 								<button
 									type="button"
 									class="btn btn-sm btn-outline"
-									disabled={true}
+									disabled={isSavingOrder}
 									title={$t('itinerary.optimize')}
+									on:click={() => optimizeDayOrder(dayIndex)}
 								>
 									{$t('itinerary.optimize')}
 								</button>

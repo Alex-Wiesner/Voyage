@@ -31,3 +31,5 @@ gpxpy==1.6.2
 pymemcache==4.0.0
 legacy-cgi==2.6.4
 requests>=2.32.5
+cryptography>=46.0.5
+django-mcp-server>=0.5.7

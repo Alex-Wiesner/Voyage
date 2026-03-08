@@ -28,88 +28,88 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 # Core Security & Debug
 # ---------------------------------------------------------------------------
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = getenv('SECRET_KEY')
+SECRET_KEY = getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = getenv('DEBUG', 'true').lower() == 'true'
+DEBUG = getenv("DEBUG", "true").lower() == "true"
 
 # ALLOWED_HOSTS = [
 #     'localhost',
 #     '127.0.0.1',
 #     'server'
 # ]
-ALLOWED_HOSTS = ['*']  # In production, restrict to known hosts.
+ALLOWED_HOSTS = ["*"]  # In production, restrict to known hosts.
 
 # ---------------------------------------------------------------------------
 # Installed Apps
 # ---------------------------------------------------------------------------
 INSTALLED_APPS = (
     "allauth_ui",
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.sites',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'allauth',
-    'allauth.account',
-    'allauth.mfa',
-    'allauth.headless',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.github',
-    'allauth.socialaccount.providers.openid_connect',
-    'invitations',
-    'drf_yasg',
-    'djmoney',
-    'corsheaders',
-    'adventures',
-    'worldtravel',
-    'users',
-    'integrations',
-    'django.contrib.gis',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.sites",
+    "rest_framework",
+    "rest_framework.authtoken",
+    "allauth",
+    "allauth.account",
+    "allauth.mfa",
+    "allauth.headless",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.github",
+    "allauth.socialaccount.providers.openid_connect",
+    "invitations",
+    "drf_yasg",
+    "djmoney",
+    "corsheaders",
+    "adventures",
+    "worldtravel",
+    "users",
+    "integrations",
+    "mcp_server",
+    "django.contrib.gis",
     # 'achievements', # Not done yet, will be added later in a future update
-    'widget_tweaks',
-    'slippers',
-
+    "widget_tweaks",
+    "slippers",
 )
 
 # ---------------------------------------------------------------------------
 # Middleware
 # ---------------------------------------------------------------------------
 MIDDLEWARE = (
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'adventures.middleware.XSessionTokenMiddleware',
-    'adventures.middleware.DisableCSRFForSessionTokenMiddleware',
-    'adventures.middleware.DisableCSRFForMobileLoginSignup',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'adventures.middleware.OverrideHostMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "adventures.middleware.XSessionTokenMiddleware",
+    "adventures.middleware.DisableCSRFForSessionTokenMiddleware",
+    "adventures.middleware.DisableCSRFForMobileLoginSignup",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "adventures.middleware.OverrideHostMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 )
 
 # ---------------------------------------------------------------------------
 # Caching
 # ---------------------------------------------------------------------------
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.PyMemcacheCache',
-        'LOCATION': '127.0.0.1:11211',
-        'TIMEOUT': 60 * 60 * 24,  # Optional: 1 day cache
+    "default": {
+        "BACKEND": "django.core.cache.backends.memcached.PyMemcacheCache",
+        "LOCATION": "127.0.0.1:11211",
+        "TIMEOUT": 60 * 60 * 24,  # Optional: 1 day cache
     }
 }
 
 # For backwards compatibility for Django 1.8
 MIDDLEWARE_CLASSES = MIDDLEWARE
 
-ROOT_URLCONF = 'main.urls'
+ROOT_URLCONF = "main.urls"
 
 # WSGI_APPLICATION = 'demo.wsgi.application'
 
@@ -117,6 +117,7 @@ ROOT_URLCONF = 'main.urls'
 # Database
 # ---------------------------------------------------------------------------
 # Using legacy PG environment variables for compatibility with existing setups
+
 
 def env(*keys, default=None):
     """Return the first non-empty environment variable from a list of keys."""
@@ -126,16 +127,17 @@ def env(*keys, default=None):
             return value
     return default
 
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': env('PGDATABASE', 'POSTGRES_DB'),
-        'USER': env('PGUSER', 'POSTGRES_USER'),
-        'PASSWORD': env('PGPASSWORD', 'POSTGRES_PASSWORD'),
-        'HOST': env('PGHOST', default='localhost'),
-        'PORT': int(env('PGPORT', default='5432')),
-        'OPTIONS': {
-            'sslmode': 'prefer',  # Prefer SSL, but allow non-SSL connections
+    "default": {
+        "ENGINE": "django.contrib.gis.db.backends.postgis",
+        "NAME": env("PGDATABASE", "POSTGRES_DB"),
+        "USER": env("PGUSER", "POSTGRES_USER"),
+        "PASSWORD": env("PGPASSWORD", "POSTGRES_PASSWORD"),
+        "HOST": env("PGHOST", default="localhost"),
+        "PORT": int(env("PGPORT", default="5432")),
+        "OPTIONS": {
+            "sslmode": "prefer",  # Prefer SSL, but allow non-SSL connections
         },
     }
 }
@@ -146,8 +148,8 @@ DATABASES = {
 # ---------------------------------------------------------------------------
 # Internationalization
 # ---------------------------------------------------------------------------
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
@@ -156,20 +158,20 @@ USE_TZ = True
 # Frontend URL & Cookies
 # ---------------------------------------------------------------------------
 # Derive frontend URL from environment and configure cookie behavior.
-unParsedFrontenedUrl = getenv('FRONTEND_URL', 'http://localhost:3000')
-FRONTEND_URL = unParsedFrontenedUrl.translate(str.maketrans('', '', '\'"'))
+unParsedFrontenedUrl = getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = unParsedFrontenedUrl.translate(str.maketrans("", "", "'\""))
 
-SESSION_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_NAME = 'sessionid'
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_NAME = "sessionid"
 
 # Secure cookies if frontend is served over HTTPS
-SESSION_COOKIE_SECURE = FRONTEND_URL.startswith('https')
-CSRF_COOKIE_SECURE = FRONTEND_URL.startswith('https')
+SESSION_COOKIE_SECURE = FRONTEND_URL.startswith("https")
+CSRF_COOKIE_SECURE = FRONTEND_URL.startswith("https")
 
 # Dynamically determine cookie domain to support subdomains while avoiding IPs
 hostname = urlparse(FRONTEND_URL).hostname
-is_ip_address = hostname.replace('.', '').isdigit()
-is_single_label = '.' not in hostname  # single-label hostnames (e.g., "localhost")
+is_ip_address = hostname.replace(".", "").isdigit()
+is_single_label = "." not in hostname  # single-label hostnames (e.g., "localhost")
 
 if is_ip_address or is_single_label:
     SESSION_COOKIE_DOMAIN = None
@@ -181,15 +183,15 @@ else:
 # ---------------------------------------------------------------------------
 # Static & Media Files
 # ---------------------------------------------------------------------------
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'  # Must match NGINX root for media serving
-STATICFILES_DIRS = [BASE_DIR / 'static']
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"  # Must match NGINX root for media serving
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 STORAGES = {
     "staticfiles": {
@@ -197,7 +199,7 @@ STORAGES = {
     },
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
-    }
+    },
 }
 
 SILENCED_SYSTEM_CHECKS = ["slippers.E001"]
@@ -207,15 +209,17 @@ SILENCED_SYSTEM_CHECKS = ["slippers.E001"]
 # ---------------------------------------------------------------------------
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates'), ],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
+            os.path.join(BASE_DIR, "templates"),
+        ],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -226,24 +230,29 @@ ALLAUTH_UI_THEME = "dim"
 # ---------------------------------------------------------------------------
 # Authentication & Accounts
 # ---------------------------------------------------------------------------
-DISABLE_REGISTRATION = getenv('DISABLE_REGISTRATION', 'false').lower() == 'true'
-DISABLE_REGISTRATION_MESSAGE = getenv('DISABLE_REGISTRATION_MESSAGE', 'Registration is disabled. Please contact the administrator if you need an account.')
+DISABLE_REGISTRATION = getenv("DISABLE_REGISTRATION", "false").lower() == "true"
+DISABLE_REGISTRATION_MESSAGE = getenv(
+    "DISABLE_REGISTRATION_MESSAGE",
+    "Registration is disabled. Please contact the administrator if you need an account.",
+)
 
-SOCIALACCOUNT_ALLOW_SIGNUP = getenv('SOCIALACCOUNT_ALLOW_SIGNUP', 'false').lower() == 'true'
+SOCIALACCOUNT_ALLOW_SIGNUP = (
+    getenv("SOCIALACCOUNT_ALLOW_SIGNUP", "false").lower() == "true"
+)
 
-AUTH_USER_MODEL = 'users.CustomUser'
-ACCOUNT_ADAPTER = 'users.adapters.CustomAccountAdapter'
+AUTH_USER_MODEL = "users.CustomUser"
+ACCOUNT_ADAPTER = "users.adapters.CustomAccountAdapter"
 INVITATIONS_ADAPTER = ACCOUNT_ADAPTER
 INVITATIONS_ACCEPT_INVITE_AFTER_SIGNUP = True
-INVITATIONS_EMAIL_SUBJECT_PREFIX = 'Voyage: '
-SOCIALACCOUNT_ADAPTER = 'users.adapters.CustomSocialAccountAdapter'
-ACCOUNT_SIGNUP_FORM_CLASS = 'users.form_overrides.CustomSignupForm'
+INVITATIONS_EMAIL_SUBJECT_PREFIX = "Voyage: "
+SOCIALACCOUNT_ADAPTER = "users.adapters.CustomSocialAccountAdapter"
+ACCOUNT_SIGNUP_FORM_CLASS = "users.form_overrides.CustomSignupForm"
 
 SESSION_SAVE_EVERY_REQUEST = True
 LOGIN_REDIRECT_URL = FRONTEND_URL  # Redirect to frontend after login
 
 SOCIALACCOUNT_LOGIN_ON_GET = True
-INVITATIONS_INVITE_FORM = 'users.form_overrides.UseAdminInviteForm'
+INVITATIONS_INVITE_FORM = "users.form_overrides.UseAdminInviteForm"
 INVITATIONS_SIGNUP_REDIRECT_URL = f"{FRONTEND_URL}/signup"
 
 HEADLESS_FRONTEND_URLS = {
@@ -256,34 +265,38 @@ HEADLESS_FRONTEND_URLS = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    'users.backends.NoPasswordAuthBackend',
+    "users.backends.NoPasswordAuthBackend",
     # 'allauth.account.auth_backends.AuthenticationBackend',
     # 'django.contrib.auth.backends.ModelBackend',
 ]
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 SITE_ID = 1
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_EMAIL_VERIFICATION = getenv('ACCOUNT_EMAIL_VERIFICATION', 'none')  # 'none', 'optional', 'mandatory'
+ACCOUNT_EMAIL_VERIFICATION = getenv(
+    "ACCOUNT_EMAIL_VERIFICATION", "none"
+)  # 'none', 'optional', 'mandatory'
 
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # Auto-link by email
 SOCIALACCOUNT_AUTO_SIGNUP = True  # Allow auto-signup post adapter checks
 
-FORCE_SOCIALACCOUNT_LOGIN = getenv('FORCE_SOCIALACCOUNT_LOGIN', 'false').lower() == 'true' # When true, only social login is allowed (no password login) and the login page will show only social providers or redirect directly to the first provider if only one is configured.
+FORCE_SOCIALACCOUNT_LOGIN = (
+    getenv("FORCE_SOCIALACCOUNT_LOGIN", "false").lower() == "true"
+)  # When true, only social login is allowed (no password login) and the login page will show only social providers or redirect directly to the first provider if only one is configured.
 
-if getenv('EMAIL_BACKEND', 'console') == 'console':
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+if getenv("EMAIL_BACKEND", "console") == "console":
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = getenv('EMAIL_HOST')
-    EMAIL_USE_TLS = getenv('EMAIL_USE_TLS', 'true').lower() == 'true'
-    EMAIL_PORT = getenv('EMAIL_PORT', 587)
-    EMAIL_USE_SSL = getenv('EMAIL_USE_SSL', 'false').lower() == 'true'
-    EMAIL_HOST_USER = getenv('EMAIL_HOST_USER')
-    EMAIL_HOST_PASSWORD = getenv('EMAIL_HOST_PASSWORD')
-    DEFAULT_FROM_EMAIL = getenv('DEFAULT_FROM_EMAIL')
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = getenv("EMAIL_HOST")
+    EMAIL_USE_TLS = getenv("EMAIL_USE_TLS", "true").lower() == "true"
+    EMAIL_PORT = getenv("EMAIL_PORT", 587)
+    EMAIL_USE_SSL = getenv("EMAIL_USE_SSL", "false").lower() == "true"
+    EMAIL_HOST_USER = getenv("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = getenv("EMAIL_HOST_PASSWORD")
+    DEFAULT_FROM_EMAIL = getenv("DEFAULT_FROM_EMAIL")
 
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # EMAIL_HOST = 'smtp.resend.com'
@@ -299,63 +312,71 @@ else:
 # Django REST Framework
 # ---------------------------------------------------------------------------
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.SessionAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework.authentication.SessionAuthentication",
     ),
-    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.UserRateThrottle',
+    "DEFAULT_SCHEMA_CLASS": "rest_framework.schemas.coreapi.AutoSchema",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.UserRateThrottle",
     ],
-    'DEFAULT_THROTTLE_RATES': {
-        'user': '1000/day',
-        'image_proxy': '60/minute',
+    "DEFAULT_THROTTLE_RATES": {
+        "user": "1000/day",
+        "image_proxy": "60/minute",
     },
 }
 
 if DEBUG:
-    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (
-        'rest_framework.renderers.JSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = (
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
     )
 else:
-    REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = (
-        'rest_framework.renderers.JSONRenderer',
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = (
+        "rest_framework.renderers.JSONRenderer",
     )
 
 
 # ---------------------------------------------------------------------------
 # CORS & CSRF
 # ---------------------------------------------------------------------------
-CORS_ALLOWED_ORIGINS = [origin.strip() for origin in getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',') if origin.strip()]
-CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost').split(',') if origin.strip()]
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in getenv("CSRF_TRUSTED_ORIGINS", "http://localhost").split(",")
+    if origin.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in getenv("CSRF_TRUSTED_ORIGINS", "http://localhost").split(",")
+    if origin.strip()
+]
 CORS_ALLOW_CREDENTIALS = True
 
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
         },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'scheduler.log',
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": "scheduler.log",
         },
     },
-    'root': {
-        'handlers': ['console', 'file'],
-        'level': 'INFO',
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file'],
-            'level': 'INFO',
-            'propagate': False,
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
         },
     },
 }
@@ -363,18 +384,28 @@ LOGGING = {
 # ---------------------------------------------------------------------------
 # Public URLs & Third-Party Integrations
 # ---------------------------------------------------------------------------
-PUBLIC_URL = getenv('PUBLIC_URL', 'http://localhost:8000')
+PUBLIC_URL = getenv("PUBLIC_URL", "http://localhost:8000")
 
 # VOYAGE_CDN_URL = getenv('VOYAGE_CDN_URL', 'https://cdn.voyage.app')
 
 # Major release version of Voyage, not including the patch version date.
-VOYAGE_RELEASE_VERSION = 'v0.12.0'
+VOYAGE_RELEASE_VERSION = "v0.12.0"
 
 # https://github.com/dr5hn/countries-states-cities-database/tags
-COUNTRY_REGION_JSON_VERSION = 'v3.0'
+COUNTRY_REGION_JSON_VERSION = "v3.0"
 
 # External service keys (do not hardcode secrets)
-GOOGLE_MAPS_API_KEY = getenv('GOOGLE_MAPS_API_KEY', '')
-STRAVA_CLIENT_ID = getenv('STRAVA_CLIENT_ID', '')
-STRAVA_CLIENT_SECRET = getenv('STRAVA_CLIENT_SECRET', '')
-OSRM_BASE_URL = getenv('OSRM_BASE_URL', 'https://router.project-osrm.org')
+GOOGLE_MAPS_API_KEY = getenv("GOOGLE_MAPS_API_KEY", "")
+STRAVA_CLIENT_ID = getenv("STRAVA_CLIENT_ID", "")
+STRAVA_CLIENT_SECRET = getenv("STRAVA_CLIENT_SECRET", "")
+OSRM_BASE_URL = getenv("OSRM_BASE_URL", "https://router.project-osrm.org")
+
+FIELD_ENCRYPTION_KEY = getenv("FIELD_ENCRYPTION_KEY", "")
+
+DJANGO_MCP_ENDPOINT = getenv("DJANGO_MCP_ENDPOINT", "api/mcp")
+DJANGO_MCP_AUTHENTICATION_CLASSES = [
+    "rest_framework.authentication.TokenAuthentication",
+]
+DJANGO_MCP_ENDPOINT_PERMISSION_CLASSES = [
+    "rest_framework.permissions.IsAuthenticated",
+]

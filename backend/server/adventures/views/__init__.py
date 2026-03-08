@@ -20,3 +20,4 @@ from .activity_view import *
 from .visit_view import *
 from .itinerary_view import *
 from .route_metrics_view import *
+from .weather_view import *
