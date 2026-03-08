@@ -1052,14 +1052,35 @@
 	}
 
 	function optimizeNearestNeighborSegment(
-		items: ResolvedItineraryItem[]
+		items: ResolvedItineraryItem[],
+		startCoords?: { latitude: number; longitude: number } | null
 	): ResolvedItineraryItem[] {
 		if (items.length < 2) return [...items];
 
 		const remaining = [...items];
 		const sorted: ResolvedItineraryItem[] = [];
 
-		const firstItem = remaining.shift();
+		// When we have context coordinates from a preceding anchor (e.g. the
+		// destination of a flight), pick the nearest item to that position as
+		// the starting point instead of blindly using the first array element.
+		let firstItem: ResolvedItineraryItem | undefined;
+		if (startCoords) {
+			let nearestIndex = 0;
+			let nearestDistance = Number.POSITIVE_INFINITY;
+			for (let i = 0; i < remaining.length; i++) {
+				const coords = getCoordinatesFromItineraryItem(remaining[i]);
+				if (!coords) continue;
+				const distance = haversineDistanceBetweenCoordinates(startCoords, coords);
+				if (distance < nearestDistance) {
+					nearestDistance = distance;
+					nearestIndex = i;
+				}
+			}
+			firstItem = remaining.splice(nearestIndex, 1)[0];
+		} else {
+			firstItem = remaining.shift();
+		}
+
 		if (!firstItem) return items;
 		sorted.push(firstItem);
 
@@ -1193,7 +1214,24 @@
 
 		const optimizedPath: ResolvedItineraryItem[] = [];
 		for (let segmentIndex = 0; segmentIndex < movableSegments.length; segmentIndex += 1) {
-			const optimizedSegment = optimizeNearestNeighborSegment(movableSegments[segmentIndex]);
+			// Determine where the traveler will be coming from so the
+			// nearest-neighbor search starts from a spatially sensible point.
+			let startCoords: { latitude: number; longitude: number } | null = null;
+			if (segmentIndex > 0) {
+				const precedingAnchor = chronologicalAnchors[segmentIndex - 1];
+				const anchorType = precedingAnchor?.item?.type || '';
+				// For transportation anchors use the *destination* (where the
+				// traveler arrives), for everything else use the default coords.
+				startCoords = getCoordinatesFromItineraryItem(
+					precedingAnchor,
+					anchorType === 'transportation' ? 'destination' : 'origin'
+				);
+			}
+
+			const optimizedSegment = optimizeNearestNeighborSegment(
+				movableSegments[segmentIndex],
+				startCoords
+			);
 			optimizedPath.push(...optimizedSegment);
 
 			if (segmentIndex < chronologicalAnchors.length) {
