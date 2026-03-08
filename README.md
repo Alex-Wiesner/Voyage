@@ -108,6 +108,14 @@ Voyage aims to be simple, beautiful, and open to everyone — inheriting Adventu
   - Collaborators can view and edit shared itineraries (collections), making planning a breeze.
 - **Customizable Themes** 🎨: Choose from 10 built-in themes including Light, Dark, Dim, Night, Forest, Aqua, Catppuccin Mocha, Aesthetic Light, Aesthetic Dark, and Northern Lights. Theme selection persists across sessions.
 
+### Travel Agent (MCP)
+
+Voyage provides an authenticated Travel Agent MCP endpoint for programmatic itinerary workflows (list collections, inspect itinerary details, create items, reorder timelines). See the guide: [`documentation/docs/guides/travel_agent.md`](documentation/docs/guides/travel_agent.md).
+
+- Default MCP path: `api/mcp`
+- Override MCP path with env var: `DJANGO_MCP_ENDPOINT`
+- Get token from authenticated session: `GET /auth/mcp-token/` and use header `Authorization: Token <token>`
+
 <!-- Roadmap -->
 
 ## 🧭 Roadmap
@@ -125,6 +133,22 @@ The Voyage Roadmap can be found in [GitHub Issues](https://github.com/Alex-Wiesn
 Contributions are always welcome!
 
 See `contributing.md` for ways to get started.
+
+### Pre-upgrade backup
+
+Before upgrading Voyage or running migrations, export a collections backup snapshot:
+
+```bash
+docker compose exec server python manage.py export_collections_backup
+```
+
+Optional custom output path:
+
+```bash
+docker compose exec server python manage.py export_collections_backup --output /code/backups/collections_backup_pre_upgrade.json
+```
+
+This command exports `Collection` and `CollectionItineraryItem` data with timestamp and counts.
 
 ### Translation
 

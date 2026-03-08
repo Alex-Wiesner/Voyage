@@ -256,6 +256,10 @@ export default defineConfig({
         collapsed: true,
         items: [
           {
+            text: "Travel Agent (MCP)",
+            link: "/docs/guides/travel_agent",
+          },
+          {
             text: "Admin Panel",
             link: "/docs/guides/admin_panel",
           },

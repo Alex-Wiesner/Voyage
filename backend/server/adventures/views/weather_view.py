@@ -60,12 +60,6 @@ class WeatherViewSet(viewsets.ViewSet):
                 )
                 continue
 
-            if parsed_date > date_cls.today():
-                results.append(
-                    {"date": date, "available": False, "temperature_c": None}
-                )
-                continue
-
             try:
                 lat = float(latitude)
                 lon = float(longitude)

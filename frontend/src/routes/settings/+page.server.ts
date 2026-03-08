@@ -16,6 +16,14 @@ type MFAAuthenticatorResponse = {
 	}[];
 };
 
+type UserAPIKey = {
+	id: string;
+	provider: string;
+	masked_api_key: string;
+	created_at: string;
+	updated_at: string;
+};
+
 export const load: PageServerLoad = async (event) => {
 	if (!event.locals.user) {
 		return redirect(302, '/');
@@ -85,6 +93,21 @@ export const load: PageServerLoad = async (event) => {
 	let wandererEnabled = integrations.wanderer.exists as boolean;
 	let wandererExpired = integrations.wanderer.expired as boolean;
 
+	let apiKeys: UserAPIKey[] = [];
+	let apiKeysConfigError: string | null = null;
+	let apiKeysFetch = await fetch(`${endpoint}/api/integrations/api-keys/`, {
+		headers: {
+			Cookie: `sessionid=${sessionId}`
+		}
+	});
+
+	if (apiKeysFetch.ok) {
+		apiKeys = (await apiKeysFetch.json()) as UserAPIKey[];
+	} else if (apiKeysFetch.status === 503) {
+		const errorBody = (await apiKeysFetch.json()) as { detail?: string };
+		apiKeysConfigError = errorBody.detail ?? 'API key storage is currently unavailable.';
+	}
+
 	let publicUrlFetch = await fetch(`${endpoint}/public-url/`);
 	let publicUrl = '';
 	if (!publicUrlFetch.ok) {
@@ -101,10 +124,13 @@ export const load: PageServerLoad = async (event) => {
 			authenticators,
 			immichIntegration,
 			publicUrl,
+			mcpTokenHeaderFormat: 'Authorization: Token <token>',
 			socialProviders,
 			googleMapsEnabled,
 			stravaGlobalEnabled,
 			stravaUserEnabled,
+			apiKeys,
+			apiKeysConfigError,
 			wandererEnabled,
 			wandererExpired
 		}

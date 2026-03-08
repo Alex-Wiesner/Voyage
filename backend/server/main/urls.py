@@ -10,7 +10,12 @@ from users.views import (
     EnabledSocialProvidersView,
     DisablePasswordAuthenticationView,
 )
-from .views import get_csrf_token, get_public_url, serve_protected_media
+from .views import (
+    get_csrf_token,
+    get_mcp_api_token,
+    get_public_url,
+    serve_protected_media,
+)
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from mcp_server.views import MCPServerStreamableHttpView
@@ -48,6 +53,7 @@ urlpatterns = [
         ),
         name="mcp_server_streamable_http_endpoint",
     ),
+    path("auth/mcp-token/", get_mcp_api_token, name="get_mcp_api_token"),
     path("auth/", include("allauth.headless.urls")),
     # Serve protected media files
     re_path(

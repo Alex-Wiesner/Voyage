@@ -23,6 +23,7 @@ Voyage is a full-fledged travel companion. With Voyage, you can log your adventu
   - Locations and itineraries can be shared via a public link or directly with other Voyage users.
   - Collaborators can view and edit shared itineraries (collections), making planning a breeze.
 - **Customizable Themes** 🎨: Choose from 10 built-in themes including Light, Dark, Dim, Night, Forest, Aqua, Catppuccin Mocha, Aesthetic Light, Aesthetic Dark, and Northern Lights. Theme selection persists across sessions.
+- **Travel Agent (MCP) access** 🤖: Voyage exposes an authenticated MCP endpoint so external clients can list collections, inspect itineraries, create itinerary items, and reorder trip timelines. See the [Travel Agent (MCP) guide](../guides/travel_agent.md).
 
 ## Why Voyage?
 

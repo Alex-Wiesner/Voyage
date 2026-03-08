@@ -734,7 +734,10 @@
 		"use_imperial": "İngiliz Ölçü Birimlerini Kullan",
 		"use_imperial_desc": "Metrik birimler yerine İngiliz birimlerini (fit, inç, pound) kullanın",
 		"trails": "Patikalar",
-		"activities": "Aktiviteler"
+		"activities": "Aktiviteler",
+		"ai_api_keys": "Yapay zeka API anahtarları",
+		"saved_api_keys": "Kaydedilen API anahtarları",
+		"add_api_key": "API anahtarı ekle"
 	},
 	"collection": {
 		"collection_created": "Koleksiyon başarıyla oluşturuldu!",

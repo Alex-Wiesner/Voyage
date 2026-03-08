@@ -1003,40 +1003,75 @@
 		return `${rounded}°C`;
 	}
 
-	function optimizeDayOrder(dayIndex: number) {
-		if (!canModify || isSavingOrder) return;
+	type HardAnchorTiming = {
+		primaryTimestamp: number;
+		secondaryTimestamp: number;
+	};
 
-		const day = days[dayIndex];
-		if (!day) return;
+	function parseAnchorDateTime(value: string | null | undefined): number | null {
+		if (!value) return null;
 
-		const sortableItems = day.items.filter((item) => {
-			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) return false;
-			return !!getCoordinatesFromItineraryItem(item);
-		});
+		const parsed = DateTime.fromISO(value);
+		if (!parsed.isValid) return null;
 
-		const nonSortableItems = day.items.filter((item) => {
-			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) return true;
-			return !getCoordinatesFromItineraryItem(item);
-		});
+		const millis = parsed.toMillis();
+		return Number.isFinite(millis) ? millis : null;
+	}
 
-		if (sortableItems.length < 2) {
-			addToast('info', getI18nText('itinerary.optimize_not_enough_items', 'Not enough stops to optimize'));
-			return;
+	function getHardAnchorTiming(item: ResolvedItineraryItem): HardAnchorTiming | null {
+		const itemType = item.item?.type || '';
+
+		if (itemType === 'transportation') {
+			const transportation = item.resolvedObject as Transportation | null;
+			const startTimestamp = parseAnchorDateTime(transportation?.date);
+			if (startTimestamp === null) return null;
+
+			const endTimestamp = parseAnchorDateTime(transportation?.end_date);
+			return {
+				primaryTimestamp: startTimestamp,
+				secondaryTimestamp: endTimestamp ?? startTimestamp
+			};
 		}
 
-		const remaining = [...sortableItems];
+		if (itemType === 'lodging') {
+			const lodging = item.resolvedObject as Lodging | null;
+			const checkInTimestamp = parseAnchorDateTime(lodging?.check_in);
+			const checkOutTimestamp = parseAnchorDateTime(lodging?.check_out);
+			if (checkInTimestamp === null && checkOutTimestamp === null) return null;
+
+			const primaryTimestamp = checkInTimestamp ?? checkOutTimestamp;
+			if (primaryTimestamp === null) return null;
+
+			return {
+				primaryTimestamp,
+				secondaryTimestamp: checkOutTimestamp ?? checkInTimestamp ?? primaryTimestamp
+			};
+		}
+
+		return null;
+	}
+
+	function optimizeNearestNeighborSegment(
+		items: ResolvedItineraryItem[]
+	): ResolvedItineraryItem[] {
+		if (items.length < 2) return [...items];
+
+		const remaining = [...items];
 		const sorted: ResolvedItineraryItem[] = [];
 
 		const firstItem = remaining.shift();
-		if (!firstItem) return;
+		if (!firstItem) return items;
 		sorted.push(firstItem);
 
 		while (remaining.length > 0) {
 			const last = sorted[sorted.length - 1];
 			const lastCoords = getCoordinatesFromItineraryItem(last);
-			if (!lastCoords) break;
+			if (!lastCoords) {
+				sorted.push(...remaining);
+				break;
+			}
 
-			let nearestIndex = 0;
+			let nearestIndex = -1;
 			let nearestDistance = Number.POSITIVE_INFINITY;
 
 			for (let index = 0; index < remaining.length; index += 1) {
@@ -1052,10 +1087,111 @@
 				}
 			}
 
+			if (nearestIndex < 0) {
+				sorted.push(...remaining);
+				break;
+			}
+
 			sorted.push(remaining.splice(nearestIndex, 1)[0]);
 		}
 
-		days[dayIndex].items = [...sorted, ...nonSortableItems];
+		return sorted;
+	}
+
+	function optimizeDayOrder(dayIndex: number) {
+		if (!canModify || isSavingOrder) return;
+
+		const day = days[dayIndex];
+		if (!day) return;
+
+		const nonShadowItems = day.items.filter((item) => !item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]);
+		const shadowItems = day.items.filter((item) => item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]);
+
+		const anchorEntries = nonShadowItems
+			.map((item, originalIndex) => {
+				const timing = getHardAnchorTiming(item);
+				if (!timing) return null;
+
+				return {
+					item,
+					originalIndex,
+					...timing
+				};
+			})
+			.filter(
+				(entry): entry is {
+					item: ResolvedItineraryItem;
+					originalIndex: number;
+					primaryTimestamp: number;
+					secondaryTimestamp: number;
+				} => !!entry
+			);
+
+		const anchorIndexSet = new Set(anchorEntries.map((entry) => entry.originalIndex));
+
+		const movableCoordinateItems = nonShadowItems.filter((item, originalIndex) => {
+			if (anchorIndexSet.has(originalIndex)) return false;
+			return !!getCoordinatesFromItineraryItem(item);
+		});
+
+		if (movableCoordinateItems.length < 2) {
+			addToast('info', getI18nText('itinerary.optimize_not_enough_items', 'Not enough stops to optimize'));
+			return;
+		}
+
+		const anchorsByPosition = [...anchorEntries].sort(
+			(a, b) => a.originalIndex - b.originalIndex
+		);
+		const chronologicalAnchors = [...anchorEntries]
+			.sort((a, b) => {
+				if (a.primaryTimestamp !== b.primaryTimestamp) {
+					return a.primaryTimestamp - b.primaryTimestamp;
+				}
+				if (a.secondaryTimestamp !== b.secondaryTimestamp) {
+					return a.secondaryTimestamp - b.secondaryTimestamp;
+				}
+				return a.originalIndex - b.originalIndex;
+			})
+			.map((entry) => entry.item);
+
+		const movableSegments: ResolvedItineraryItem[][] = Array.from(
+			{ length: anchorsByPosition.length + 1 },
+			() => []
+		);
+
+		let activeSegmentIndex = 0;
+		let nextAnchorPositionIndex = 0;
+
+		nonShadowItems.forEach((item, originalIndex) => {
+			const nextAnchor = anchorsByPosition[nextAnchorPositionIndex];
+			if (nextAnchor && nextAnchor.originalIndex === originalIndex) {
+				nextAnchorPositionIndex += 1;
+				activeSegmentIndex += 1;
+				return;
+			}
+
+			if (anchorIndexSet.has(originalIndex)) return;
+			if (!getCoordinatesFromItineraryItem(item)) return;
+
+			movableSegments[activeSegmentIndex].push(item);
+		});
+
+		const optimizedPath: ResolvedItineraryItem[] = [];
+		for (let segmentIndex = 0; segmentIndex < movableSegments.length; segmentIndex += 1) {
+			const optimizedSegment = optimizeNearestNeighborSegment(movableSegments[segmentIndex]);
+			optimizedPath.push(...optimizedSegment);
+
+			if (segmentIndex < chronologicalAnchors.length) {
+				optimizedPath.push(chronologicalAnchors[segmentIndex]);
+			}
+		}
+
+		const nonCoordinateItems = nonShadowItems.filter((item, originalIndex) => {
+			if (anchorIndexSet.has(originalIndex)) return false;
+			return !getCoordinatesFromItineraryItem(item);
+		});
+
+		days[dayIndex].items = [...optimizedPath, ...nonCoordinateItems, ...shadowItems];
 		days = [...days];
 
 		isSavingOrder = true;

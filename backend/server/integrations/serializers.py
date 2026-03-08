@@ -1,3 +1,5 @@
+from django.db import IntegrityError
+
 from .models import (
     EncryptionConfigurationError,
     ImmichIntegration,
@@ -41,12 +43,28 @@ class UserAPIKeySerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         api_key = validated_data.pop("api_key")
         user = self.context["request"].user
-        instance = UserAPIKey(user=user, **validated_data)
+
+        provider = validated_data.get("provider")
+
         try:
+            instance, _ = UserAPIKey.objects.get_or_create(
+                user=user,
+                provider=provider,
+                defaults={"encrypted_api_key": ""},
+            )
             instance.set_api_key(api_key)
         except EncryptionConfigurationError as exc:
             raise serializers.ValidationError({"api_key": str(exc)}) from exc
-        instance.save()
+        except IntegrityError:
+            # Defensive retry: in highly concurrent requests a competing create can
+            # still race. Fall back to updating the existing row instead of 500.
+            instance = UserAPIKey.objects.get(user=user, provider=provider)
+            try:
+                instance.set_api_key(api_key)
+            except EncryptionConfigurationError as exc:
+                raise serializers.ValidationError({"api_key": str(exc)}) from exc
+
+        instance.save(update_fields=["encrypted_api_key", "updated_at"])
         return instance
 
     def update(self, instance, validated_data):

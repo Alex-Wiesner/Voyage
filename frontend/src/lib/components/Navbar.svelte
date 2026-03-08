@@ -6,6 +6,7 @@
 
 	import DotsHorizontal from '~icons/mdi/dots-horizontal';
 	import Calendar from '~icons/mdi/calendar';
+	import HelpCircle from '~icons/mdi/help-circle';
 	import AboutModal from './AboutModal.svelte';
 	import AccountMultiple from '~icons/mdi/account-multiple';
 	import MapMarker from '~icons/mdi/map-marker';
@@ -109,11 +110,24 @@
 		}
 	};
 
+	type NavigationItem = {
+		path: string;
+		icon: any;
+		label: string;
+		external?: boolean;
+	};
+
 	// Navigation items for better organization
-	const navigationItems = [
+	const navigationItems: NavigationItem[] = [
 		{ path: '/locations', icon: MapMarker, label: 'locations.locations' },
 		{ path: '/collections', icon: FormatListBulletedSquare, label: 'navbar.collections' },
 		{ path: '/invites', icon: AccountMultiple, label: 'invites.title' },
+		{
+			path: 'https://voyage.app/docs/usage/usage.html',
+			icon: HelpCircle,
+			label: 'navbar.documentation',
+			external: true
+		},
 		{ path: '/worldtravel', icon: Earth, label: 'navbar.worldtravel' },
 		{ path: '/map', icon: MapIcon, label: 'navbar.map' },
 		{ path: '/calendar', icon: Calendar, label: 'navbar.calendar' },
@@ -149,8 +163,10 @@
 							<li>
 								<a
 									href={item.path}
+									target={item.external ? '_blank' : undefined}
+									rel={item.external ? 'noopener noreferrer' : undefined}
 									class="btn btn-ghost justify-start gap-3 w-full text-left rounded-xl"
-									class:btn-active={$page.url.pathname === item.path}
+									class:btn-active={!item.external && $page.url.pathname === item.path}
 								>
 									<svelte:component this={item.icon} class="w-5 h-5" />
 									{$t(item.label)}
@@ -218,9 +234,11 @@
 					<li>
 						<a
 							href={item.path}
+							target={item.external ? '_blank' : undefined}
+							rel={item.external ? 'noopener noreferrer' : undefined}
 							class="btn btn-ghost gap-2 rounded-xl transition-all duration-200 hover:bg-base-200"
-							class:bg-primary-10={$page.url.pathname === item.path}
-							class:text-primary={$page.url.pathname === item.path}
+							class:bg-primary-10={!item.external && $page.url.pathname === item.path}
+							class:text-primary={!item.external && $page.url.pathname === item.path}
 						>
 							<svelte:component this={item.icon} class="w-4 h-4" />
 							<span class="hidden xl:inline">{$t(item.label)}</span>

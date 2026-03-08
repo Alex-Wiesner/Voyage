@@ -5,21 +5,42 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseForbidden
 from django.views.static import serve
 from adventures.utils.file_permissions import checkFilePermission
+from rest_framework.authentication import SessionAuthentication, TokenAuthentication
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
 
 def get_csrf_token(request):
     csrf_token = get_token(request)
-    return JsonResponse({'csrfToken': csrf_token})
+    return JsonResponse({"csrfToken": csrf_token})
+
 
 def get_public_url(request):
-    return JsonResponse({'PUBLIC_URL': getenv('PUBLIC_URL')})
+    return JsonResponse({"PUBLIC_URL": getenv("PUBLIC_URL")})
 
-protected_paths = ['images/', 'attachments/']
+
+@api_view(["GET"])
+@authentication_classes([SessionAuthentication, TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_mcp_api_token(request):
+    token, _ = Token.objects.get_or_create(user=request.user)
+    return Response({"token": token.key})
+
+
+protected_paths = ["images/", "attachments/"]
+
 
 def serve_protected_media(request, path):
     if any([path.startswith(protected_path) for protected_path in protected_paths]):
-        image_id = path.split('/')[1]
+        image_id = path.split("/")[1]
         user = request.user
-        media_type =  path.split('/')[0] + '/'
+        media_type = path.split("/")[0] + "/"
         if checkFilePermission(image_id, user, media_type):
             if settings.DEBUG:
                 # In debug mode, serve the file directly
@@ -27,8 +48,8 @@ def serve_protected_media(request, path):
             else:
                 # In production, use X-Accel-Redirect to serve the file using Nginx
                 response = HttpResponse()
-                response['Content-Type'] = ''
-                response['X-Accel-Redirect'] = '/protectedMedia/' + path
+                response["Content-Type"] = ""
+                response["X-Accel-Redirect"] = "/protectedMedia/" + path
                 return response
         else:
             return HttpResponseForbidden()
@@ -37,6 +58,6 @@ def serve_protected_media(request, path):
             return serve(request, path, document_root=settings.MEDIA_ROOT)
         else:
             response = HttpResponse()
-            response['Content-Type'] = ''
-            response['X-Accel-Redirect'] = '/protectedMedia/' + path
+            response["Content-Type"] = ""
+            response["X-Accel-Redirect"] = "/protectedMedia/" + path
             return response

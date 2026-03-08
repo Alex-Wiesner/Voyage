@@ -16,7 +16,6 @@
 	import WandererLogoSrc from '$lib/assets/wanderer.svg';
 
 	export let data: PageData;
-	console.log(data);
 	let user: User;
 	let emails: typeof data.props.emails;
 	if (data.user) {
@@ -37,6 +36,21 @@
 	let stravaUserEnabled = data.props.stravaUserEnabled;
 	let wandererEnabled = data.props.wandererEnabled;
 	let wandererExpired = data.props.wandererExpired;
+	type UserAPIKey = {
+		id: string;
+		provider: string;
+		masked_api_key: string;
+		created_at: string;
+		updated_at: string;
+	};
+	let userApiKeys: UserAPIKey[] = data.props.apiKeys ?? [];
+	let apiKeysConfigError: string | null = data.props.apiKeysConfigError ?? null;
+	let newApiKeyProvider = 'google_maps';
+	let newApiKeyValue = '';
+	let isSavingApiKey = false;
+	let deletingApiKeyId: string | null = null;
+	let mcpToken: string | null = null;
+	let isLoadingMcpToken = false;
 	let activeSection: string = 'profile';
 
 	// typed alias for social providers to satisfy TypeScript
@@ -82,6 +96,7 @@
 		{ id: 'security', icon: '🔒', label: () => $t('settings.security') },
 		{ id: 'emails', icon: '📧', label: () => $t('settings.emails') },
 		{ id: 'integrations', icon: '🔗', label: () => $t('settings.integrations') },
+		{ id: 'ai_api_keys', icon: '🤖', label: () => $t('settings.ai_api_keys') },
 		{ id: 'import_export', icon: '📦', label: () => $t('settings.backup_restore') },
 		{ id: 'admin', icon: '⚙️', label: () => $t('settings.admin') },
 		{ id: 'advanced', icon: '🛠️', label: () => $t('settings.advanced') }
@@ -399,6 +414,162 @@
 				addToast('error', $t('wanderer.refresh_error'));
 			}
 			newWandererIntegration.password = '';
+		}
+	}
+
+	function getApiKeysErrorMessage(errorBody: any): string {
+		if (errorBody?.detail) {
+			return errorBody.detail;
+		}
+		if (errorBody?.api_key?.[0]) {
+			return errorBody.api_key[0];
+		}
+		if (errorBody?.provider?.[0]) {
+			return errorBody.provider[0];
+		}
+		return $t('settings.api_keys_generic_error');
+	}
+
+	async function addUserApiKey(event: SubmitEvent) {
+		event.preventDefault();
+
+		if (!newApiKeyValue.trim()) {
+			addToast('error', $t('settings.api_keys_value_required'));
+			return;
+		}
+
+		isSavingApiKey = true;
+		try {
+			const res = await fetch('/api/integrations/api-keys/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					provider: newApiKeyProvider,
+					api_key: newApiKeyValue
+				})
+			});
+
+			let payload: any = null;
+			try {
+				payload = await res.json();
+			} catch {
+				payload = null;
+			}
+
+			if (res.ok && payload) {
+				const existingIndex = userApiKeys.findIndex((key) => key.provider === payload.provider);
+				if (existingIndex >= 0) {
+					const updated = [...userApiKeys];
+					updated[existingIndex] = payload;
+					userApiKeys = updated.sort((a, b) => a.provider.localeCompare(b.provider));
+				} else {
+					userApiKeys = [...userApiKeys, payload].sort((a, b) => a.provider.localeCompare(b.provider));
+				}
+				newApiKeyValue = '';
+				apiKeysConfigError = null;
+				addToast('success', $t('settings.api_keys_saved'));
+				return;
+			}
+
+			if (res.status === 503) {
+				apiKeysConfigError = getApiKeysErrorMessage(payload);
+				addToast('error', $t('settings.api_keys_config_unavailable'));
+				return;
+			}
+
+			addToast('error', getApiKeysErrorMessage(payload));
+		} catch {
+			addToast('error', $t('settings.api_keys_generic_error'));
+		} finally {
+			isSavingApiKey = false;
+		}
+	}
+
+	async function deleteUserApiKey(apiKey: UserAPIKey) {
+		deletingApiKeyId = apiKey.id;
+		try {
+			const res = await fetch(`/api/integrations/api-keys/${apiKey.id}/`, {
+				method: 'DELETE'
+			});
+
+			if (res.ok || res.status === 204) {
+				userApiKeys = userApiKeys.filter((key) => key.id !== apiKey.id);
+				addToast('success', $t('settings.api_keys_deleted'));
+				return;
+			}
+
+			let payload: any = null;
+			try {
+				payload = await res.json();
+			} catch {
+				payload = null;
+			}
+
+			if (res.status === 503) {
+				apiKeysConfigError = getApiKeysErrorMessage(payload);
+				addToast('error', $t('settings.api_keys_config_unavailable'));
+				return;
+			}
+
+			addToast('error', getApiKeysErrorMessage(payload));
+		} catch {
+			addToast('error', $t('settings.api_keys_generic_error'));
+		} finally {
+			deletingApiKeyId = null;
+		}
+	}
+
+	function getMaskedMcpToken(token: string): string {
+		if (token.length <= 8) {
+			return '••••••••';
+		}
+		return `${token.slice(0, 4)}••••••••${token.slice(-4)}`;
+	}
+
+	async function fetchOrCreateMcpToken() {
+		isLoadingMcpToken = true;
+		try {
+			const res = await fetch('/auth/mcp-token/', {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+
+			if (!res.ok) {
+				addToast('error', $t('settings.generic_error'));
+				return;
+			}
+
+			const payload = (await res.json()) as { token?: string };
+			if (!payload.token) {
+				addToast('error', $t('settings.generic_error'));
+				return;
+			}
+
+			mcpToken = payload.token;
+			addToast('success', 'MCP token ready.');
+		} catch {
+			addToast('error', $t('settings.generic_error'));
+		} finally {
+			isLoadingMcpToken = false;
+		}
+	}
+
+	async function copyMcpAuthHeader() {
+		if (!mcpToken) {
+			addToast('error', 'Generate token first.');
+			return;
+		}
+
+		const authHeader = `Authorization: Token ${mcpToken}`;
+		try {
+			await navigator.clipboard.writeText(authHeader);
+			addToast('success', $t('adventures.copied_to_clipboard'));
+		} catch {
+			addToast('error', $t('adventures.copy_failed'));
 		}
 	}
 </script>
@@ -1288,6 +1459,189 @@
 										</p>
 									</div>
 								{/if}
+							</div>
+						</div>
+					{/if}
+
+					<!-- AI API Keys Section -->
+					{#if activeSection === 'ai_api_keys'}
+						<div class="bg-base-100 rounded-2xl shadow-xl p-8">
+							<div class="flex items-center gap-4 mb-6">
+								<div class="p-3 bg-primary/10 rounded-xl">
+									<span class="text-2xl">🤖</span>
+								</div>
+								<div>
+									<h2 class="text-2xl font-bold">{$t('settings.ai_api_keys')}</h2>
+									<p class="text-base-content/70">
+										{$t('settings.ai_api_keys_desc')}
+									</p>
+								</div>
+							</div>
+
+							{#if apiKeysConfigError}
+								<div class="alert alert-warning mb-6">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="stroke-current shrink-0 h-6 w-6"
+										fill="none"
+										viewBox="0 0 24 24"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+										/>
+									</svg>
+									<div>
+										<p class="font-semibold">{$t('settings.api_keys_config_unavailable')}</p>
+										<p class="text-sm">{apiKeysConfigError}</p>
+										<p class="text-sm mt-1">{$t('settings.api_keys_config_guidance')}</p>
+									</div>
+								</div>
+							{/if}
+
+							<div class="alert alert-info mb-6">
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="stroke-current shrink-0 h-6 w-6"
+									fill="none"
+									viewBox="0 0 24 24"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+									/>
+								</svg>
+								<div>
+									<p class="font-semibold">{$t('settings.travel_agent_help_title')}</p>
+									<p class="text-sm">{$t('settings.travel_agent_help_body')}</p>
+									<p class="text-sm mt-1 flex flex-wrap gap-3">
+										<a class="link link-primary" href="/collections"
+											>{$t('settings.travel_agent_help_open_collections')}</a
+										>
+										<a
+											class="link link-primary"
+											href="https://voyage.app/docs/usage/usage.html"
+											target="_blank"
+											rel="noopener noreferrer"
+											>{$t('settings.travel_agent_help_setup_guide')}</a
+										>
+									</p>
+								</div>
+							</div>
+
+							<div class="p-6 bg-base-200 rounded-xl mb-6">
+								<h3 class="text-lg font-semibold mb-2">MCP Access Token</h3>
+								<p class="text-sm text-base-content/70 mb-4">
+									Create or fetch your personal token for MCP clients. The same token is reused if one
+									already exists.
+								</p>
+
+								<div class="flex flex-wrap gap-3 mb-4">
+									<button
+										class="btn btn-primary"
+										on:click={fetchOrCreateMcpToken}
+										disabled={isLoadingMcpToken}
+									>
+										{#if isLoadingMcpToken}
+											<span class="loading loading-spinner loading-sm"></span>
+										{/if}
+										{mcpToken ? 'Refresh token' : 'Get MCP token'}
+									</button>
+									<button
+										class="btn btn-outline"
+										on:click={copyMcpAuthHeader}
+										disabled={!mcpToken}
+									>
+										{$t('settings.copy')}
+									</button>
+								</div>
+
+								<div class="space-y-2">
+									<div class="text-xs uppercase tracking-wide text-base-content/60">Token</div>
+									<div class="font-mono text-sm p-3 rounded-lg bg-base-100 border border-base-300">
+										{mcpToken ? getMaskedMcpToken(mcpToken) : 'Not generated yet'}
+									</div>
+								</div>
+
+								<div class="mt-4 p-4 bg-base-100 rounded-lg border border-base-300">
+									<div class="text-sm font-medium mb-1">Use this exact auth header format</div>
+									<div class="font-mono text-sm">{data.props.mcpTokenHeaderFormat}</div>
+								</div>
+							</div>
+
+							<div class="p-6 bg-base-200 rounded-xl mb-6">
+								<h3 class="text-lg font-semibold mb-4">{$t('settings.saved_api_keys')}</h3>
+								{#if userApiKeys.length === 0}
+									<p class="text-base-content/70">{$t('settings.no_api_keys_saved')}</p>
+								{:else}
+									<div class="space-y-3">
+										{#each userApiKeys as apiKey}
+											<div class="flex items-center justify-between gap-4 p-4 bg-base-100 rounded-lg">
+												<div>
+													<div class="font-medium">{apiKey.provider}</div>
+													<div class="text-sm text-base-content/70 font-mono">
+														{apiKey.masked_api_key}
+													</div>
+												</div>
+												<button
+													class="btn btn-sm btn-error"
+													on:click={() => deleteUserApiKey(apiKey)}
+													disabled={deletingApiKeyId === apiKey.id}
+												>
+													{#if deletingApiKeyId === apiKey.id}
+														<span class="loading loading-spinner loading-xs"></span>
+													{/if}
+													{$t('adventures.remove')}
+												</button>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+
+							<div class="p-6 bg-base-200 rounded-xl">
+								<h3 class="text-lg font-semibold mb-4">{$t('settings.add_api_key')}</h3>
+								<form class="space-y-4" on:submit={addUserApiKey}>
+									<div class="form-control">
+										<label class="label" for="api-key-provider">
+											<span class="label-text font-medium">{$t('settings.provider')}</span>
+										</label>
+										<select
+											id="api-key-provider"
+											class="select select-bordered select-primary w-full"
+											bind:value={newApiKeyProvider}
+										>
+											<option value="google_maps">Google Maps</option>
+										</select>
+									</div>
+									<div class="form-control">
+										<label class="label" for="api-key-value">
+											<span class="label-text font-medium">{$t('settings.api_key_value')}</span>
+										</label>
+										<input
+											id="api-key-value"
+											type="password"
+											class="input input-bordered input-primary focus:input-primary"
+											bind:value={newApiKeyValue}
+											placeholder={$t('settings.api_key_value_placeholder')}
+											required
+											autocomplete="off"
+										/>
+										<p class="text-sm text-base-content/70 mt-1">
+											{$t('settings.api_key_write_only_hint')}
+										</p>
+									</div>
+									<button class="btn btn-primary" type="submit" disabled={isSavingApiKey}>
+										{#if isSavingApiKey}
+											<span class="loading loading-spinner loading-sm"></span>
+										{/if}
+										{$t('settings.save_api_key')}
+									</button>
+								</form>
 							</div>
 						</div>
 					{/if}

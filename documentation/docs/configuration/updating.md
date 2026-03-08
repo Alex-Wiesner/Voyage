@@ -1,6 +1,25 @@
 # Updating
 
-Updating Voyage when using docker can be quite easy. Run the following commands to pull the latest version and restart the containers. Make sure you backup your instance before updating just in case!
+Updating Voyage when using docker can be quite easy. Run a collections backup before upgrading, then pull the latest version and restart the containers.
+
+## Pre-upgrade backup (recommended)
+
+Before running migrations or updating containers, export a collections snapshot:
+
+```bash
+docker compose exec server python manage.py export_collections_backup
+```
+
+You can also provide a custom output path:
+
+```bash
+docker compose exec server python manage.py export_collections_backup --output /code/backups/collections_backup_pre_upgrade.json
+```
+
+The backup file includes a timestamp, record counts, and snapshot data for:
+
+- `Collection`
+- `CollectionItineraryItem`
 
 Note: Make sure you are in the same directory as your `docker-compose.yml` file.
 

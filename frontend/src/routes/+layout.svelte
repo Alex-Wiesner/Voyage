@@ -51,9 +51,7 @@
 
 	if (browser) {
 		init({
-			fallbackLocale: locales.includes(navigator.language.split('-')[0])
-				? navigator.language.split('-')[0]
-				: 'en',
+			fallbackLocale: 'en',
 			initialLocale: data.locale
 		});
 		// get the locale cookie if it exists and set it as the initial locale if it exists

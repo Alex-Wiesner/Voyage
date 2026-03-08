@@ -2,6 +2,8 @@
 
 Welcome to Voyage! This guide will help you get started with Voyage and provide you with an overview of the features available to you.
 
+Voyage also includes a Travel Agent MCP interface for authenticated programmatic trip access and itinerary actions. See the [Travel Agent (MCP) guide](../guides/travel_agent.md).
+
 ## Key Terms
 
 #### Locations
