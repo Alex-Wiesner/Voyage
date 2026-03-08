@@ -15,8 +15,6 @@
 	import ImageDisplayModal from '$lib/components/ImageDisplayModal.svelte';
 	import AttachmentCard from '$lib/components/cards/AttachmentCard.svelte';
 	import { getBasemapUrl, isAllDay, TRANSPORTATION_TYPES_ICONS } from '$lib';
-	import Star from '~icons/mdi/star';
-	import StarOutline from '~icons/mdi/star-outline';
 	import MapMarker from '~icons/mdi/map-marker';
 	import CalendarRange from '~icons/mdi/calendar-range';
 	import OpenInNew from '~icons/mdi/open-in-new';
@@ -65,14 +63,6 @@
 			return TRANSPORTATION_TYPES_ICONS[type as keyof typeof TRANSPORTATION_TYPES_ICONS];
 		}
 		return '🚗';
-	}
-
-	function renderStars(rating: number) {
-		const stars = [];
-		for (let i = 1; i <= 5; i++) {
-			stars.push(i <= rating);
-		}
-		return stars;
 	}
 
 	onMount(async () => {
@@ -395,23 +385,6 @@
 						<h1 class="text-6xl font-bold drop-shadow-lg">{transportation.name}</h1>
 					</div>
 
-					<!-- Rating -->
-					{#if transportation.rating !== undefined && transportation.rating !== null}
-						<div class="flex justify-center mb-6">
-							<div class="rating rating-lg">
-								{#each Array.from({ length: 5 }, (_, i) => i + 1) as star}
-									<input
-										type="radio"
-										name="rating-hero"
-										class="mask mask-star-2 bg-warning"
-										checked={star <= transportation.rating}
-										disabled
-									/>
-								{/each}
-							</div>
-						</div>
-					{/if}
-
 					<!-- Quick Info Badges -->
 					<div class="flex flex-wrap justify-center gap-4 mb-6">
 						{#if transportation.type}
@@ -553,20 +526,6 @@
 														{$t('transportation.from_location')}
 														{getTransportationIcon(transportation.type)}
 													</p>
-													{#if transportation.rating}
-														<div class="flex items-center gap-1 mb-2">
-															{#each renderStars(transportation.rating) as filled}
-																{#if filled}
-																	<Star class="w-4 h-4 text-warning fill-current" />
-																{:else}
-																	<StarOutline class="w-4 h-4 text-gray-400" />
-																{/if}
-															{/each}
-															<span class="text-xs text-black ml-1">
-																({transportation.rating}/5)
-															</span>
-														</div>
-													{/if}
 													{#if transportation.from_location}
 														<div class="text-xs text-black">
 															📍 {transportation.from_location}
@@ -591,20 +550,6 @@
 														{$t('transportation.to_location')}
 														{getTransportationIcon(transportation.type)}
 													</p>
-													{#if transportation.rating}
-														<div class="flex items-center gap-1 mb-2">
-															{#each renderStars(transportation.rating) as filled}
-																{#if filled}
-																	<Star class="w-4 h-4 text-warning fill-current" />
-																{:else}
-																	<StarOutline class="w-4 h-4 text-gray-400" />
-																{/if}
-															{/each}
-															<span class="text-xs text-black ml-1">
-																({transportation.rating}/5)
-															</span>
-														</div>
-													{/if}
 													{#if transportation.to_location}
 														<div class="text-xs text-black">
 															📍 {transportation.to_location}

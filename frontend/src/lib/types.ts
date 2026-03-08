@@ -45,7 +45,6 @@ export type Location = {
 	location?: string | null;
 	tags?: string[] | null;
 	description?: string | null;
-	rating?: number | null;
 	price?: number | null;
 	price_currency?: string | null;
 	link?: string | null;
@@ -202,7 +201,6 @@ export type Transportation = {
 	type: string;
 	name: string;
 	description: string | null;
-	rating: number | null;
 	price: number | null;
 	price_currency: string | null;
 	link: string | null;
@@ -341,7 +339,6 @@ export type Lodging = {
 	name: string;
 	type: string;
 	description: string | null;
-	rating: number | null;
 	link: string | null;
 	check_in: string | null; // ISO 8601 date string
 	check_out: string | null; // ISO 8601 date string

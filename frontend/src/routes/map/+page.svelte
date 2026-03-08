@@ -746,25 +746,20 @@
 																	</div>
 																{/if}
 
-																<div class="flex flex-wrap items-center gap-2">
-																	{#if hoveredLocation.rating !== null && hoveredLocation.rating !== undefined}
-																		<div class="badge badge-neutral badge-sm">
-																			★ {hoveredLocation.rating}
-																		</div>
-																	{/if}
-																	<div class="badge badge-ghost badge-sm">
-																		Visits: {hoveredLocation.visits?.length ?? 0}
-																	</div>
-																	<div class="badge badge-ghost badge-sm">
-																		Media: {hoveredLocation.images?.length ?? 0}
-																	</div>
-																	<div class="badge badge-ghost badge-sm">
-																		Files: {hoveredLocation.attachments?.length ?? 0}
-																	</div>
-																	<div class="badge badge-ghost badge-sm">
-																		Trails: {hoveredLocation.trails?.length ?? 0}
-																	</div>
-																</div>
+										<div class="flex flex-wrap items-center gap-2">
+											<div class="badge badge-ghost badge-sm">
+												Visits: {hoveredLocation.visits?.length ?? 0}
+											</div>
+											<div class="badge badge-ghost badge-sm">
+												Media: {hoveredLocation.images?.length ?? 0}
+											</div>
+											<div class="badge badge-ghost badge-sm">
+												Files: {hoveredLocation.attachments?.length ?? 0}
+											</div>
+											<div class="badge badge-ghost badge-sm">
+												Trails: {hoveredLocation.trails?.length ?? 0}
+											</div>
+										</div>
 
 																{#if hoveredLocation.visits && hoveredLocation.visits.length > 0}
 																	<div class="text-xs text-base-content/70">

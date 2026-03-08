@@ -15,8 +15,6 @@
 
 	import Eye from '~icons/mdi/eye';
 	import EyeOff from '~icons/mdi/eye-off';
-	import Star from '~icons/mdi/star';
-	import StarOutline from '~icons/mdi/star-outline';
 	import Calendar from '~icons/mdi/calendar';
 	import DotsHorizontal from '~icons/mdi/dots-horizontal';
 	import CalendarRemove from '~icons/mdi/calendar-remove';
@@ -59,14 +57,6 @@
 		}
 	}
 
-	function renderStars(rating: number) {
-		const stars = [];
-		for (let i = 1; i <= 5; i++) {
-			stars.push(i <= rating);
-		}
-		return stars;
-	}
-
 	const dispatch = createEventDispatcher();
 
 	const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
@@ -86,6 +76,8 @@
 	export let collection: Collection | null = null;
 	export let readOnly: boolean = false;
 	export let itineraryItem: CollectionItineraryItem | null = null;
+	export let compact: boolean = false;
+	export let showImage: boolean = true;
 
 	const toMiles = (km: any) => (Number(km) * 0.621371).toFixed(1);
 
@@ -173,62 +165,77 @@
 {/if}
 
 <div
-	class="card w-full max-w-md bg-base-300 shadow hover:shadow-md transition-all duration-200 border border-base-300 group"
+	class="card w-full bg-base-300 shadow hover:shadow-md transition-all duration-200 border border-base-300 group"
+	class:max-w-md={!compact}
 	aria-label="transportation-card"
 >
-	<!-- Image Section with Overlay -->
-	<div class="relative overflow-hidden rounded-t-2xl">
-		{#if routeGeojson}
-			<TransportationRoutePreview
-				geojson={routeGeojson}
-				name={transportation.name}
-				images={transportation.images}
-			/>
-		{:else}
-			<CardCarousel
-				images={transportation.images}
-				icon={getTransportationIcon(transportation.type)}
-				name={transportation.name}
-			/>
-		{/if}
+	{#if showImage}
+		<!-- Image Section with Overlay -->
+		<div class="relative overflow-hidden rounded-t-2xl">
+			{#if routeGeojson}
+				<TransportationRoutePreview
+					geojson={routeGeojson}
+					name={transportation.name}
+					images={transportation.images}
+				/>
+			{:else}
+				<CardCarousel
+					images={transportation.images}
+					icon={getTransportationIcon(transportation.type)}
+					name={transportation.name}
+				/>
+			{/if}
 
-		<!-- Privacy Indicator -->
-		<div class="absolute top-2 right-4">
-			<div
-				class="tooltip tooltip-left"
-				data-tip={transportation.is_public ? $t('adventures.public') : $t('adventures.private')}
-			>
+			<!-- Privacy Indicator -->
+			<div class="absolute top-2 right-4">
 				<div
-					class="badge badge-sm p-1 rounded-full text-base-content shadow-sm"
-					role="img"
-					aria-label={transportation.is_public ? $t('adventures.public') : $t('adventures.private')}
+					class="tooltip tooltip-left"
+					data-tip={transportation.is_public ? $t('adventures.public') : $t('adventures.private')}
 				>
-					{#if transportation.is_public}
-						<Eye class="w-4 h-4" />
-					{:else}
-						<EyeOff class="w-4 h-4" />
-					{/if}
+					<div
+						class="badge badge-sm p-1 rounded-full text-base-content shadow-sm"
+						role="img"
+						aria-label={transportation.is_public
+							? $t('adventures.public')
+							: $t('adventures.private')}
+					>
+						{#if transportation.is_public}
+							<Eye class="w-4 h-4" />
+						{:else}
+							<EyeOff class="w-4 h-4" />
+						{/if}
+					</div>
 				</div>
 			</div>
+
+			<!-- Category Badge -->
+			{#if transportation.type}
+				<div class="absolute bottom-4 left-4">
+					<div class="badge badge-primary shadow-lg font-medium">
+						{$t(`transportation.modes.${transportation.type}`)}
+						{getTransportationIcon(transportation.type)}
+					</div>
+				</div>
+			{/if}
 		</div>
+	{/if}
 
-		<!-- Category Badge -->
-		{#if transportation.type}
-			<div class="absolute bottom-4 left-4">
-				<div class="badge badge-primary shadow-lg font-medium">
-					{$t(`transportation.modes.${transportation.type}`)}
-					{getTransportationIcon(transportation.type)}
-				</div>
-			</div>
-		{/if}
-	</div>
-
-	<div class="card-body p-4 space-y-3 min-w-0">
+	<div
+		class="card-body min-w-0"
+		class:p-3={compact}
+		class:p-4={!compact}
+		class:space-y-2={compact}
+		class:space-y-3={!compact}
+	>
 		<!-- Header -->
 		<div class="flex items-start justify-between gap-3">
 			<a
 				href="/transportations/{transportation.id}"
-				class="hover:text-primary transition-colors duration-200 line-clamp-2 text-lg font-semibold"
+				class="hover:text-primary transition-colors duration-200 line-clamp-2"
+				class:text-base={compact}
+				class:text-lg={!compact}
+				class:font-medium={compact}
+				class:font-semibold={!compact}
 			>
 				{transportation.name}
 			</a>
@@ -342,6 +349,33 @@
 				{/if}
 			</div>
 		</div>
+
+		{#if !showImage}
+			<div class="flex items-center gap-2 text-xs text-base-content/70 min-w-0">
+				<div
+					class="tooltip tooltip-left"
+					data-tip={transportation.is_public ? $t('adventures.public') : $t('adventures.private')}
+				>
+					<div
+						class="badge badge-sm p-1 rounded-full text-base-content shadow-sm"
+						role="img"
+						aria-label={transportation.is_public ? $t('adventures.public') : $t('adventures.private')}
+					>
+						{#if transportation.is_public}
+							<Eye class="w-4 h-4" />
+						{:else}
+							<EyeOff class="w-4 h-4" />
+						{/if}
+					</div>
+				</div>
+				{#if transportation.type}
+					<div class="badge badge-primary badge-sm font-medium">
+						{$t(`transportation.modes.${transportation.type}`)}
+						{getTransportationIcon(transportation.type)}
+					</div>
+				{/if}
+			</div>
+		{/if}
 
 		<!-- Route & Flight Info -->
 		{#if routeFromLabel || routeToLabel}
@@ -466,7 +500,7 @@
 			</div>
 		{/if}
 
-		<!-- Stats & Rating -->
+		<!-- Stats -->
 		<div class="flex flex-wrap items-center gap-2 text-sm">
 			{#if transportationPriceLabel}
 				<span class="badge badge-ghost badge-sm">💰 {transportationPriceLabel}</span>
@@ -483,20 +517,6 @@
 				<span class="badge badge-ghost badge-sm">⏱️ {travelDurationLabel}</span>
 			{/if}
 
-			{#if transportation.rating}
-				<div class="flex items-center gap-1">
-					<div class="flex -ml-1">
-						{#each renderStars(transportation.rating) as filled}
-							{#if filled}
-								<Star class="w-4 h-4 text-warning fill-current" />
-							{:else}
-								<StarOutline class="w-4 h-4 text-base-content/30" />
-							{/if}
-						{/each}
-					</div>
-					<span class="text-xs text-base-content/60">({transportation.rating}/5)</span>
-				</div>
-			{/if}
 		</div>
 	</div>
 </div>

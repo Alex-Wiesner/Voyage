@@ -7,7 +7,6 @@
 
 	// Icons
 	import MapIcon from '~icons/mdi/map';
-	import ClearIcon from '~icons/mdi/close';
 	import InfoIcon from '~icons/mdi/information';
 	import GenerateIcon from '~icons/mdi/lightning-bolt';
 	import ArrowLeftIcon from '~icons/mdi/arrow-left';
@@ -50,7 +49,6 @@
 		name: '',
 		type: '',
 		description: '',
-		rating: NaN,
 		link: '',
 		date: null,
 		end_date: null,
@@ -516,7 +514,6 @@
 			transportation.type = initialTransportation.type || '';
 			transportation.link = initialTransportation.link || '';
 			transportation.description = initialTransportation.description || '';
-			transportation.rating = initialTransportation.rating ?? NaN;
 			transportation.is_public = initialTransportation.is_public ?? true;
 			transportation.flight_number = initialTransportation.flight_number || null;
 			transportation.start_code = initialTransportation.start_code || null;
@@ -714,44 +711,6 @@
 							</div>
 						{/if}
 
-						<!-- Rating Field -->
-						<div class="form-control">
-							<label class="label" for="rating">
-								<span class="label-text font-medium">{$t('adventures.rating')}</span>
-							</label>
-							<div
-								class="flex items-center gap-4 p-3 bg-base-100/80 border border-base-300 rounded-lg"
-							>
-								<div class="rating">
-									<input
-										type="radio"
-										name="rating"
-										id="rating"
-										class="rating-hidden"
-										checked={Number.isNaN(transportation.rating)}
-									/>
-									{#each [1, 2, 3, 4, 5] as star}
-										<input
-											type="radio"
-											name="rating"
-											class="mask mask-star-2 bg-warning"
-											on:click={() => (transportation.rating = star)}
-											checked={transportation.rating === star}
-										/>
-									{/each}
-								</div>
-								{#if !Number.isNaN(transportation.rating)}
-									<button
-										type="button"
-										class="btn btn-sm btn-error btn-outline gap-2"
-										on:click={() => (transportation.rating = NaN)}
-									>
-										<ClearIcon class="w-4 h-4" />
-										{$t('adventures.remove')}
-									</button>
-								{/if}
-							</div>
-						</div>
 					</div>
 
 					<!-- Right Column -->

@@ -285,23 +285,6 @@
 				<div class="max-w-4xl">
 					<h1 class="text-6xl font-bold mb-4 drop-shadow-lg">{adventure.name}</h1>
 
-					<!-- Rating -->
-					{#if adventure.rating !== undefined && adventure.rating !== null}
-						<div class="flex justify-center mb-6">
-							<div class="rating rating-lg">
-								{#each Array.from({ length: 5 }, (_, i) => i + 1) as star}
-									<input
-										type="radio"
-										name="rating-hero"
-										class="mask mask-star-2 bg-warning"
-										checked={star <= adventure.rating}
-										disabled
-									/>
-								{/each}
-							</div>
-						</div>
-					{/if}
-
 					<!-- Quick Info Badges -->
 					<div class="flex flex-wrap justify-center gap-4 mb-6">
 						<a

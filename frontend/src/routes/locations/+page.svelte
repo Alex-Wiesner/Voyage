@@ -405,11 +405,11 @@
 											<input
 												type="radio"
 												name="order_by"
-												value="rating"
+												value="price"
 												class="radio radio-primary radio-sm"
-												checked={currentSort.order_by === 'rating'}
+												checked={currentSort.order_by === 'price'}
 											/>
-											<span class="label-text text-sm">{$t('adventures.rating')}</span>
+											<span class="label-text text-sm">{$t('adventures.price')}</span>
 										</label>
 									</div>
 								</div>

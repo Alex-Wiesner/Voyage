@@ -14,8 +14,6 @@
 	import CardCarousel from '../CardCarousel.svelte';
 	import Eye from '~icons/mdi/eye';
 	import EyeOff from '~icons/mdi/eye-off';
-	import Star from '~icons/mdi/star';
-	import StarOutline from '~icons/mdi/star-outline';
 	import MapMarker from '~icons/mdi/map-marker';
 	import DotsHorizontal from '~icons/mdi/dots-horizontal';
 	import CalendarRemove from '~icons/mdi/calendar-remove';
@@ -59,14 +57,6 @@
 		} else {
 			return '🏨';
 		}
-	}
-
-	function renderStars(rating: number) {
-		const stars = [];
-		for (let i = 1; i <= 5; i++) {
-			stars.push(i <= rating);
-		}
-		return stars;
 	}
 
 	export let lodging: Lodging;
@@ -532,23 +522,8 @@
 			</div>
 		{/if}
 
-		<!-- Rating & Info Badges -->
+		<!-- Info Badges -->
 		<div class="flex flex-wrap items-center gap-2 text-sm">
-			{#if lodging.rating}
-				<div class="flex items-center gap-1">
-					<div class="flex -ml-1">
-						{#each renderStars(lodging.rating) as filled}
-							{#if filled}
-								<Star class="w-4 h-4 text-warning fill-current" />
-							{:else}
-								<StarOutline class="w-4 h-4 text-base-content/30" />
-							{/if}
-						{/each}
-					</div>
-					<span class="text-xs text-base-content/60">({lodging.rating}/5)</span>
-				</div>
-			{/if}
-
 			{#if lodging.user == user?.uuid || (collection && user && collection.shared_with?.includes(user.uuid))}
 				{#if lodging.reservation_number}
 					<span class="badge badge-primary badge-sm font-medium">

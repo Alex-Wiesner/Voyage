@@ -50,7 +50,7 @@ Manage your full list of locations with ease. View upcoming and past trips, filt
 :::
 
 ::: details 📋 **Detailed Adventure Logs**  
-Capture rich details for every location: name, dates, precise locations, vivid descriptions, personal ratings, photos, and customizable categories. Your memories deserve to be more than just map pins — keep them alive with full, organized logs.  
+Capture rich details for every location: name, dates, precise locations, vivid descriptions, photos, and customizable categories. Your memories deserve to be more than just map pins — keep them alive with full, organized logs.  
 <img src="https://raw.githubusercontent.com/Alex-Wiesner/voyage/refs/heads/main/brand/screenshots/details.png" alt="Detailed Adventure Logs" style="max-width:100%; margin-top:10px;" />  
 :::
 

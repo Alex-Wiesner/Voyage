@@ -7,7 +7,6 @@
 
 	// Icons
 	import MapIcon from '~icons/mdi/map';
-	import ClearIcon from '~icons/mdi/close';
 	import InfoIcon from '~icons/mdi/information';
 	import GenerateIcon from '~icons/mdi/lightning-bolt';
 	import ArrowLeftIcon from '~icons/mdi/arrow-left';
@@ -49,7 +48,6 @@
 		name: string;
 		type: string;
 		description: string;
-		rating: number;
 		link: string;
 		check_in: string | null;
 		check_out: string | null;
@@ -67,7 +65,6 @@
 		name: '',
 		type: '',
 		description: '',
-		rating: NaN,
 		link: '',
 		check_in: null,
 		check_out: null,
@@ -442,7 +439,6 @@
 			lodging.type = initialLodging.type || '';
 			lodging.link = initialLodging.link || '';
 			lodging.description = initialLodging.description || '';
-			lodging.rating = initialLodging.rating ?? NaN;
 			lodging.is_public = initialLodging.is_public ?? true;
 			lodging.reservation_number = initialLodging.reservation_number || null;
 			const money = toMoneyValue(
@@ -563,45 +559,6 @@
 								<option value="motel">{$t('lodging.motel')}</option>
 								<option value="other">{$t('lodging.other')}</option>
 							</select>
-						</div>
-
-						<!-- Rating Field -->
-						<div class="form-control">
-							<label class="label" for="rating">
-								<span class="label-text font-medium">{$t('adventures.rating')}</span>
-							</label>
-							<div
-								class="flex items-center gap-4 p-3 bg-base-100/80 border border-base-300 rounded-lg"
-							>
-								<div class="rating">
-									<input
-										type="radio"
-										name="rating"
-										id="rating"
-										class="rating-hidden"
-										checked={Number.isNaN(lodging.rating)}
-									/>
-									{#each [1, 2, 3, 4, 5] as star}
-										<input
-											type="radio"
-											name="rating"
-											class="mask mask-star-2 bg-warning"
-											on:click={() => (lodging.rating = star)}
-											checked={lodging.rating === star}
-										/>
-									{/each}
-								</div>
-								{#if !Number.isNaN(lodging.rating)}
-									<button
-										type="button"
-										class="btn btn-sm btn-error btn-outline gap-2"
-										on:click={() => (lodging.rating = NaN)}
-									>
-										<ClearIcon class="w-4 h-4" />
-										{$t('adventures.remove')}
-									</button>
-								{/if}
-							</div>
 						</div>
 
 						<!-- Reservation Number -->

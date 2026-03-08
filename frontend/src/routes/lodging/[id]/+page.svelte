@@ -15,8 +15,6 @@
 	import ImageDisplayModal from '$lib/components/ImageDisplayModal.svelte';
 	import AttachmentCard from '$lib/components/cards/AttachmentCard.svelte';
 	import { getBasemapUrl, isAllDay, LODGING_TYPES_ICONS } from '$lib';
-	import Star from '~icons/mdi/star';
-	import StarOutline from '~icons/mdi/star-outline';
 	import MapMarker from '~icons/mdi/map-marker';
 	import CalendarRange from '~icons/mdi/calendar-range';
 	import Eye from '~icons/mdi/eye';
@@ -67,14 +65,6 @@
 		} else {
 			return '🏨';
 		}
-	}
-
-	function renderStars(rating: number) {
-		const stars = [];
-		for (let i = 1; i <= 5; i++) {
-			stars.push(i <= rating);
-		}
-		return stars;
 	}
 
 	const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
@@ -258,23 +248,6 @@
 						<h1 class="text-6xl font-bold drop-shadow-lg">{lodging.name}</h1>
 					</div>
 
-					<!-- Rating -->
-					{#if lodging.rating !== undefined && lodging.rating !== null}
-						<div class="flex justify-center mb-6">
-							<div class="rating rating-lg">
-								{#each Array.from({ length: 5 }, (_, i) => i + 1) as star}
-									<input
-										type="radio"
-										name="rating-hero"
-										class="mask mask-star-2 bg-warning"
-										checked={star <= lodging.rating}
-										disabled
-									/>
-								{/each}
-							</div>
-						</div>
-					{/if}
-
 					<!-- Quick Info Badges -->
 					<div class="flex flex-wrap justify-center gap-4 mb-6">
 						{#if lodging.type}
@@ -389,32 +362,20 @@
 									zoom={13}
 								>
 									<DefaultMarker lngLat={[lodging.longitude, lodging.latitude]}>
-										<Popup openOn="click" offset={[0, -10]}>
-											<div class="p-2">
-												<div class="text-lg font-bold text-black mb-1">{lodging.name}</div>
-												<p class="font-semibold text-black text-sm mb-2">
-													{$t(`lodging.${lodging.type}`)}
-													{getLodgingIcon(lodging.type)}
-												</p>
-												{#if lodging.rating}
-													<div class="flex items-center gap-1 mb-2">
-														{#each renderStars(lodging.rating) as filled}
-															{#if filled}
-																<Star class="w-4 h-4 text-warning fill-current" />
-															{:else}
-																<StarOutline class="w-4 h-4 text-gray-400" />
-															{/if}
-														{/each}
-														<span class="text-xs text-black ml-1">({lodging.rating}/5)</span>
-													</div>
-												{/if}
-												{#if lodging.location}
-													<div class="text-xs text-black">
-														📍 {lodging.location}
-													</div>
-												{/if}
-											</div>
-										</Popup>
+									<Popup openOn="click" offset={[0, -10]}>
+										<div class="p-2">
+											<div class="text-lg font-bold text-black mb-1">{lodging.name}</div>
+											<p class="font-semibold text-black text-sm mb-2">
+												{$t(`lodging.${lodging.type}`)}
+												{getLodgingIcon(lodging.type)}
+											</p>
+											{#if lodging.location}
+												<div class="text-xs text-black">
+													📍 {lodging.location}
+												</div>
+											{/if}
+										</div>
+									</Popup>
 									</DefaultMarker>
 								</MapLibre>
 							</div>

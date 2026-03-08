@@ -355,12 +355,6 @@
 		return Array.from(types.values()).sort((a, b) => b.distance - a.distance);
 	})();
 
-	$: averageLocationRating = (() => {
-		const rated = visitedLocations.filter((loc) => loc.rating !== null && loc.rating !== undefined);
-		if (rated.length === 0) return 0;
-		return rated.reduce((sum, loc) => sum + (loc.rating || 0), 0) / rated.length;
-	})();
-
 	$: checklistStats = (() => {
 		let totalItems = 0;
 		let checkedItems = 0;
@@ -743,18 +737,9 @@
 			</div>
 
 			<!-- Additional Stats Row -->
-			{#if averageLocationRating > 0 || checklistStats.total > 0 || lodgingTypeBreakdown.length > 0}
+			{#if checklistStats.total > 0 || lodgingTypeBreakdown.length > 0}
 				<div class="divider">{$t('adventures.more_details')}</div>
 				<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-					{#if averageLocationRating > 0}
-						<div class="stat bg-base-300 rounded-lg p-4">
-							<div class="stat-figure text-2xl">⭐</div>
-							<div class="stat-title text-xs">{$t('adventures.avg_rating')}</div>
-							<div class="stat-value text-lg">{averageLocationRating.toFixed(1)}</div>
-							<div class="stat-desc text-xs">{$t('adventures.of_locations')}</div>
-						</div>
-					{/if}
-
 					{#if checklistStats.total > 0}
 						<div class="stat bg-base-300 rounded-lg p-4">
 							<div class="stat-figure text-2xl">✓</div>

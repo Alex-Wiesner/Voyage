@@ -53,7 +53,6 @@
 		link: null,
 		description: null,
 		tags: [],
-		rating: NaN,
 		price: null,
 		price_currency: null,
 		is_public: false,
@@ -81,7 +80,6 @@
 		link: locationToEdit?.link || null,
 		description: locationToEdit?.description || null,
 		tags: locationToEdit?.tags || [],
-		rating: locationToEdit?.rating || NaN,
 		price: locationToEdit?.price ?? null,
 		price_currency: locationToEdit?.price_currency ?? null,
 		is_public: locationToEdit?.is_public || false,
@@ -295,7 +293,6 @@
 				on:save={(e) => {
 					location.name = e.detail.name;
 					location.category = e.detail.category;
-					location.rating = e.detail.rating;
 					location.is_public = e.detail.is_public;
 					location.link = e.detail.link;
 					location.description = e.detail.description;

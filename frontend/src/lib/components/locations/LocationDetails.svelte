@@ -15,7 +15,6 @@
 	import GenerateIcon from '~icons/mdi/lightning-bolt';
 	import ArrowLeftIcon from '~icons/mdi/arrow-left';
 	import SaveIcon from '~icons/mdi/content-save';
-	import ClearIcon from '~icons/mdi/close-circle';
 
 	const dispatch = createEventDispatcher();
 
@@ -34,7 +33,6 @@
 	let location: {
 		name: string;
 		category: Category | null;
-		rating: number;
 		price: number | null;
 		price_currency: string | null;
 		is_public: boolean;
@@ -48,7 +46,6 @@
 	} = {
 		name: '',
 		category: null,
-		rating: NaN,
 		price: null,
 		price_currency: DEFAULT_CURRENCY,
 		is_public: false,
@@ -239,7 +236,6 @@
 			if (!location.name) location.name = initialLocation.name || '';
 			if (!location.link) location.link = initialLocation.link || '';
 			if (!location.description) location.description = initialLocation.description || '';
-			if (Number.isNaN(location.rating)) location.rating = initialLocation.rating || NaN;
 			if (location.price === null || location.price === undefined) {
 				const money = toMoneyValue(
 					initialLocation.price,
@@ -359,44 +355,6 @@
 							}}
 						/>
 
-						<!-- Rating Field -->
-						<div class="form-control">
-							<label class="label" for="rating">
-								<span class="label-text font-medium">{$t('adventures.rating')}</span>
-							</label>
-							<div
-								class="flex items-center gap-4 p-3 bg-base-100/80 border border-base-300 rounded-lg"
-							>
-								<div class="rating">
-									<input
-										type="radio"
-										name="rating"
-										id="rating"
-										class="rating-hidden"
-										checked={Number.isNaN(location.rating)}
-									/>
-									{#each [1, 2, 3, 4, 5] as star}
-										<input
-											type="radio"
-											name="rating"
-											class="mask mask-star-2 bg-warning"
-											on:click={() => (location.rating = star)}
-											checked={location.rating === star}
-										/>
-									{/each}
-								</div>
-								{#if !Number.isNaN(location.rating)}
-									<button
-										type="button"
-										class="btn btn-sm btn-error btn-outline gap-2"
-										on:click={() => (location.rating = NaN)}
-									>
-										<ClearIcon class="w-4 h-4" />
-										{$t('adventures.remove')}
-									</button>
-								{/if}
-							</div>
-						</div>
 					</div>
 
 					<!-- Right Column -->

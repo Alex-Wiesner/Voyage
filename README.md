@@ -47,7 +47,7 @@ Voyage aims to be simple, beautiful, and open to everyone — inheriting Adventu
   <img src="./brand/screenshots/adventures.png" alt="Locations" />
   <p>Displays the locations you have visited and the ones you plan to embark on. You can also filter and sort the locations.</p>
   <img src="./brand/screenshots/details.png" alt="Location Details" />
-  <p>Shows specific details about a location, including the name, date, location, description, and rating.</p>
+  <p>Shows specific details about a location, including the name, date, location, and description.</p>
   <img src="./brand/screenshots/edit.png" alt="Edit Modal" />
   <img src="./brand/screenshots/map.png" alt="Location Details" />
   <p>View all of your locations on a map, with the ability to filter by visit status and add new ones by click on the map</p>
@@ -99,7 +99,7 @@ Voyage aims to be simple, beautiful, and open to everyone — inheriting Adventu
 - **Plan Your Next Trip** 📃: Take the guesswork out of planning your next adventure with an easy-to-use itinerary planner.
   - Itineraries can be created for any number of days and can include multiple destinations.
   - A timeline-style day view shows ordered stops with numbered markers and compact location cards (no image banners) for a dense overview. Lodging placement follows directional rules: on check-in day lodging appears after the last stop, on check-out day it appears before the first stop, and on days with no locations a single lodging card is shown (or two cards when a checkout and checkin are different lodgings). Lodging cards use the same compact style (no image header) as location cards within the itinerary.
-  - Connector rows between consecutive locations display distance and travel time powered by [OSRM](https://project-osrm.org/) routing (walking if ≤ 20 min, driving otherwise), with automatic haversine fallback when OSRM is unavailable. Self-hosted OSRM instances are supported via the `OSRM_BASE_URL` environment variable. Transportation items appear as separate compact connector rows showing mode, duration, and distance. Boundary transitions between lodging and adjacent stops are also shown as connector rows.
+  - Connector rows between adjacent items display distance and travel time powered by [OSRM](https://project-osrm.org/) routing (walking if ≤ 20 min, driving otherwise), with automatic haversine fallback when OSRM is unavailable. Self-hosted OSRM instances are supported via the `OSRM_BASE_URL` environment variable. Transportation items appear as compact cards (same style as location cards — no image banners) showing mode, duration, and distance; connector routing uses the transportation's origin coordinates when approaching and destination coordinates when departing. Boundary transitions between lodging and adjacent stops are also shown as connector rows.
   - Each day has a single `+ Add` control to insert new places, and day-level quick actions include Auto-fill and an Optimize placeholder. Lodging added from within a day is automatically scheduled to that day.
   - Itineraries include many planning features like flight information, notes, checklists, and links to external resources.
   - Itineraries can be shared with friends and family for collaborative planning.

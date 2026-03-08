@@ -408,17 +408,6 @@
 		return '🚗';
 	}
 
-	function formatTransportationDuration(minutes: number | null | undefined): string | null {
-		if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return null;
-		const safeMinutes = Math.max(0, Math.floor(minutes));
-		const hours = Math.floor(safeMinutes / 60);
-		const mins = safeMinutes % 60;
-		const parts = [] as string[];
-		if (hours) parts.push(`${hours}h`);
-		parts.push(`${mins}m`);
-		return parts.join(' ');
-	}
-
 	function formatTransportationDistance(distanceKm: number | null | undefined): string | null {
 		if (distanceKm === null || distanceKm === undefined || Number.isNaN(distanceKm)) return null;
 		if (distanceKm < 10) return `${distanceKm.toFixed(1)} km`;
@@ -509,7 +498,8 @@
 		};
 	};
 
-	type ConnectableItemType = 'location' | 'lodging';
+	type ConnectableItemType = 'location' | 'lodging' | 'transportation';
+	type TransportationCoordinateRole = 'origin' | 'destination';
 
 	type RouteMetricResult = {
 		distance_label?: string;
@@ -523,16 +513,36 @@
 	let activeConnectorFetchVersion = 0;
 
 	function isConnectableItemType(type: string): type is ConnectableItemType {
-		return type === 'location' || type === 'lodging';
+		return type === 'location' || type === 'lodging' || type === 'transportation';
 	}
 
 	function getCoordinatesFromItineraryItem(
-		item: ResolvedItineraryItem | null
+		item: ResolvedItineraryItem | null,
+		transportationRole: TransportationCoordinateRole = 'origin'
 	): { latitude: number; longitude: number } | null {
 		if (!item) return null;
 
 		const itemType = item.item?.type || '';
 		if (!isConnectableItemType(itemType)) return null;
+
+		if (itemType === 'transportation') {
+			const transportation = item.resolvedObject as Transportation | null;
+			if (!transportation) return null;
+
+			const latitude = normalizeCoordinate(
+				transportationRole === 'origin'
+					? transportation.origin_latitude
+					: transportation.destination_latitude
+			);
+			const longitude = normalizeCoordinate(
+				transportationRole === 'origin'
+					? transportation.origin_longitude
+					: transportation.destination_longitude
+			);
+			if (latitude === null || longitude === null) return null;
+
+			return { latitude, longitude };
+		}
 
 		const resolvedObj = item.resolvedObject as Location | Lodging | null;
 		if (!resolvedObj) return null;
@@ -544,20 +554,20 @@
 		return { latitude, longitude };
 	}
 
-	function getFirstLocationItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
+	function getFirstConnectableItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
 		for (const item of items) {
 			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) continue;
-			if ((item.item?.type || '') === 'location') return item;
+			if (isConnectableItemType(item.item?.type || '')) return item;
 		}
 
 		return null;
 	}
 
-	function getLastLocationItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
+	function getLastConnectableItem(items: ResolvedItineraryItem[]): ResolvedItineraryItem | null {
 		for (let index = items.length - 1; index >= 0; index -= 1) {
 			const item = items[index];
 			if (item?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) continue;
-			if ((item.item?.type || '') === 'location') return item;
+			if (isConnectableItemType(item.item?.type || '')) return item;
 		}
 
 		return null;
@@ -691,8 +701,14 @@
 		const nextType = nextItem.item?.type || '';
 		if (!isConnectableItemType(currentType) || !isConnectableItemType(nextType)) return null;
 
-		const fromCoordinates = getCoordinatesFromItineraryItem(currentItem);
-		const toCoordinates = getCoordinatesFromItineraryItem(nextItem);
+		const fromCoordinates = getCoordinatesFromItineraryItem(
+			currentItem,
+			currentType === 'transportation' ? 'destination' : 'origin'
+		);
+		const toCoordinates = getCoordinatesFromItineraryItem(
+			nextItem,
+			'origin'
+		);
 		if (!fromCoordinates || !toCoordinates) return null;
 
 		const key = getLocationConnectorKey(currentItem, nextItem);
@@ -705,7 +721,7 @@
 		};
 	}
 
-	function findNextLocationItem(
+	function findNextConnectableItem(
 		items: ResolvedItineraryItem[],
 		currentIndex: number
 	): ResolvedItineraryItem | null {
@@ -714,7 +730,7 @@
 			if (candidate?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
 				continue;
 			}
-			if ((candidate?.item?.type || '') === 'location') {
+			if (isConnectableItemType(candidate?.item?.type || '')) {
 				return candidate;
 			}
 		}
@@ -734,11 +750,11 @@
 
 		for (const dayGroup of dayGroups) {
 			const dayTimelineItems = getDayTimelineItems(dayGroup);
-			const firstLocationItem = getFirstLocationItem(dayGroup.items);
-			const lastLocationItem = getLastLocationItem(dayGroup.items);
+			const firstConnectableItem = getFirstConnectableItem(dayGroup.items);
+			const lastConnectableItem = getLastConnectableItem(dayGroup.items);
 
-			if (dayGroup.preTimelineLodging && firstLocationItem) {
-				pushPair(getConnectorPair(dayGroup.preTimelineLodging, firstLocationItem));
+			if (dayGroup.preTimelineLodging && firstConnectableItem) {
+				pushPair(getConnectorPair(dayGroup.preTimelineLodging, firstConnectableItem));
 			}
 
 			for (let index = 0; index < dayTimelineItems.length - 1; index += 1) {
@@ -746,12 +762,12 @@
 				if (currentItem?.[SHADOW_ITEM_MARKER_PROPERTY_NAME]) {
 					continue;
 				}
-				const nextLocationItem = findNextLocationItem(dayTimelineItems, index);
-				pushPair(getConnectorPair(currentItem, nextLocationItem));
+				const nextConnectableItem = findNextConnectableItem(dayTimelineItems, index);
+				pushPair(getConnectorPair(currentItem, nextConnectableItem));
 			}
 
-			if (dayGroup.postTimelineLodging && lastLocationItem) {
-				pushPair(getConnectorPair(lastLocationItem, dayGroup.postTimelineLodging));
+			if (dayGroup.postTimelineLodging && lastConnectableItem) {
+				pushPair(getConnectorPair(lastConnectableItem, dayGroup.postTimelineLodging));
 			}
 		}
 
@@ -885,11 +901,20 @@
 			unavailable: true
 		};
 
-		const currentLocation = currentItem.resolvedObject as Location | Lodging | null;
-		const nextLocation = nextItem.resolvedObject as Location | Lodging | null;
-		if (!currentLocation || !nextLocation) return unavailableConnector;
+		const fromCoordinates = getCoordinatesFromItineraryItem(
+			currentItem,
+			currentType === 'transportation' ? 'destination' : 'origin'
+		);
+		const toCoordinates = getCoordinatesFromItineraryItem(
+			nextItem,
+			'origin'
+		);
+		if (!fromCoordinates || !toCoordinates) return unavailableConnector;
 
-		const distanceKm = haversineDistanceKm(currentLocation, nextLocation);
+		const distanceKm = haversineDistanceKm(
+			{ latitude: fromCoordinates.latitude, longitude: fromCoordinates.longitude } as Location,
+			{ latitude: toCoordinates.latitude, longitude: toCoordinates.longitude } as Location
+		);
 		if (distanceKm === null) return unavailableConnector;
 
 		const walkingMinutes = (distanceKm / WALKING_SPEED_KMH) * 60;
@@ -926,14 +951,20 @@
 		const nextType = nextItem.item?.type || '';
 		if (!isConnectableItemType(currentType) || !isConnectableItemType(nextType)) return null;
 
-		const currentLocation = currentItem.resolvedObject as Location | Lodging | null;
-		const nextLocation = nextItem.resolvedObject as Location | Lodging | null;
-		if (!currentLocation || !nextLocation) return null;
+		const fromCoordinates = getCoordinatesFromItineraryItem(
+			currentItem,
+			currentType === 'transportation' ? 'destination' : 'origin'
+		);
+		const toCoordinates = getCoordinatesFromItineraryItem(
+			nextItem,
+			'origin'
+		);
+		if (!fromCoordinates || !toCoordinates) return null;
 
-		const fromLatitude = normalizeCoordinate(currentLocation.latitude);
-		const fromLongitude = normalizeCoordinate(currentLocation.longitude);
-		const toLatitude = normalizeCoordinate(nextLocation.latitude);
-		const toLongitude = normalizeCoordinate(nextLocation.longitude);
+		const fromLatitude = fromCoordinates.latitude;
+		const fromLongitude = fromCoordinates.longitude;
+		const toLatitude = toCoordinates.latitude;
+		const toLongitude = toCoordinates.longitude;
 
 		if (
 			fromLatitude === null ||
@@ -953,50 +984,6 @@
 	function getI18nText(key: string, fallback: string): string {
 		const translated = $t(key);
 		return translated && translated !== key ? translated : fallback;
-	}
-
-	function editTransportationInline(transportation: Transportation) {
-		handleEditTransportation({ detail: transportation } as CustomEvent<Transportation>);
-	}
-
-	async function removeItineraryEntry(item: CollectionItineraryItem) {
-		if (!item?.id) return;
-		try {
-			const res = await fetch(`/api/itineraries/${item.id}`, {
-				method: 'DELETE'
-			});
-			if (!res.ok) throw new Error('Failed to remove itinerary item');
-			handleRemoveItineraryItem(new CustomEvent('removeFromItinerary', { detail: item }) as any);
-			addToast('info', $t('itinerary.item_remove_success'));
-		} catch (error) {
-			console.error('Error removing itinerary item:', error);
-			addToast('error', $t('itinerary.item_remove_error'));
-		}
-	}
-
-	async function deleteTransportationFromItinerary(
-		item: CollectionItineraryItem,
-		transportation: Transportation
-	) {
-		const confirmed = window.confirm($t('adventures.transportation_delete_confirm'));
-		if (!confirmed) return;
-
-		try {
-			const res = await fetch(`/api/transportations/${transportation.id}`, {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json'
-				}
-			});
-
-			if (!res.ok) throw new Error('Failed to delete transportation');
-
-			addToast('info', $t('transportation.transportation_deleted'));
-			handleItemDelete(new CustomEvent('delete', { detail: transportation.id }) as any);
-		} catch (error) {
-			console.error('Failed to delete transportation:', error);
-			addToast('error', $t('transportation.transportation_delete_error'));
-		}
 	}
 
 	function upsertNote(note: Note) {
@@ -2399,6 +2386,9 @@
 												transportation={resolvedObj}
 												{user}
 												{collection}
+												readOnly={!canModify}
+												compact={true}
+												showImage={false}
 												on:delete={handleItemDelete}
 												itineraryItem={item}
 												on:removeFromItinerary={handleRemoveItineraryItem}
@@ -2463,34 +2453,34 @@
 			{@const preTimelineLodging = day.preTimelineLodging}
 			{@const postTimelineLodging = day.postTimelineLodging}
 			{@const dayTimelineItems = getDayTimelineItems(day)}
-			{@const firstLocationItem = getFirstLocationItem(day.items)}
-			{@const lastLocationItem = getLastLocationItem(day.items)}
-			{@const noLocationsInDay = !firstLocationItem && !lastLocationItem}
+			{@const firstConnectableItem = getFirstConnectableItem(day.items)}
+			{@const lastConnectableItem = getLastConnectableItem(day.items)}
+			{@const noLocationsInDay = !firstConnectableItem && !lastConnectableItem}
 			{@const shouldCollapseBoundaryLodging =
 				noLocationsInDay &&
 				preTimelineLodging?.id &&
 				postTimelineLodging?.id &&
 				preTimelineLodging.id === postTimelineLodging.id}
 			{@const startBoundaryConnector =
-				preTimelineLodging && firstLocationItem
-					? getLocationConnector(preTimelineLodging, firstLocationItem)
+				preTimelineLodging && firstConnectableItem
+					? getLocationConnector(preTimelineLodging, firstConnectableItem)
 					: null}
 			{@const startBoundaryDirectionsUrl =
-				preTimelineLodging && firstLocationItem
+				preTimelineLodging && firstConnectableItem
 					? buildDirectionsUrl(
 							preTimelineLodging,
-							firstLocationItem,
+							firstConnectableItem,
 							startBoundaryConnector?.mode || 'walking'
 						)
 					: null}
 			{@const endBoundaryConnector =
-				postTimelineLodging && lastLocationItem
-					? getLocationConnector(lastLocationItem, postTimelineLodging)
+				postTimelineLodging && lastConnectableItem
+					? getLocationConnector(lastConnectableItem, postTimelineLodging)
 					: null}
 			{@const endBoundaryDirectionsUrl =
-				postTimelineLodging && lastLocationItem
+				postTimelineLodging && lastConnectableItem
 					? buildDirectionsUrl(
-							lastLocationItem,
+							lastConnectableItem,
 							postTimelineLodging,
 							endBoundaryConnector?.mode || 'walking'
 						)
@@ -2737,11 +2727,11 @@
 									{@const objectType = item.item?.type || ''}
 									{@const resolvedObj = item.resolvedObject}
 									{@const multiDay = isMultiDay(item)}
-									{@const nextLocationItem = findNextLocationItem(dayTimelineItems, index)}
-									{@const locationConnector = getLocationConnector(item, nextLocationItem)}
+									{@const nextConnectableItem = findNextConnectableItem(dayTimelineItems, index)}
+									{@const locationConnector = getLocationConnector(item, nextConnectableItem)}
 									{@const directionsUrl = buildDirectionsUrl(
 										item,
-										nextLocationItem,
+										nextConnectableItem,
 										locationConnector?.mode || 'walking'
 									)}
 									{@const isDraggingShadow = item[SHADOW_ITEM_MARKER_PROPERTY_NAME]}
@@ -2797,84 +2787,25 @@
 													{/if}
 
 													{#if objectType === 'transportation'}
-														<div class="rounded-xl border border-base-300 bg-base-100 px-4 py-3">
-															<div class="flex items-center justify-between gap-3 mb-2">
-																<div class="flex items-center gap-2 min-w-0">
-																	<span class="text-lg"
-																		>{getTransportationIcon(resolvedObj.type)}</span
-																	>
-																	<p class="font-semibold truncate">{resolvedObj.name}</p>
-																	<span class="badge badge-outline badge-sm truncate">
-																		{$t(`transportation.modes.${resolvedObj.type}`) ||
-																			resolvedObj.type}
-																	</span>
-																</div>
-																<div class="text-xs opacity-70 flex items-center gap-2 shrink-0">
-																	{#if formatTransportationDuration(resolvedObj.travel_duration_minutes)}
-																		<span
-																			>{formatTransportationDuration(
-																				resolvedObj.travel_duration_minutes
-																			)}</span
-																		>
-																	{/if}
-																	{#if formatTransportationDistance(resolvedObj.distance)}
-																		<span>{formatTransportationDistance(resolvedObj.distance)}</span
-																		>
-																	{/if}
-																</div>
-															</div>
-															<div class="text-sm opacity-80 truncate">
-																{resolvedObj.from_location || '—'} → {resolvedObj.to_location ||
-																	'—'}
-															</div>
-															{#if canModify}
-																<div class="mt-2 flex flex-wrap gap-2">
-																	<button
-																		type="button"
-																		class="btn btn-xs btn-ghost"
-																		on:click={() => editTransportationInline(resolvedObj)}
-																	>
-																		{$t('transportation.edit')}
-																	</button>
-																	<button
-																		type="button"
-																		class="btn btn-xs btn-ghost"
-																		on:click={() =>
-																			handleOpenDayPickerForItem(
-																				'transportation',
-																				resolvedObj,
-																				true,
-																				day.date
-																			)}
-																	>
-																		{$t('itinerary.change_day')}
-																	</button>
-																	<button
-																		type="button"
-																		class="btn btn-xs btn-ghost"
-																		on:click={() =>
-																			moveItemToGlobal('transportation', resolvedObj.id)}
-																	>
-																		{$t('itinerary.move_to_trip_context') || 'Move to Trip Context'}
-																	</button>
-																	<button
-																		type="button"
-																		class="btn btn-xs btn-ghost"
-																		on:click={() => removeItineraryEntry(item)}
-																	>
-																		{$t('itinerary.remove_from_itinerary')}
-																	</button>
-																	<button
-																		type="button"
-																		class="btn btn-xs btn-error btn-outline"
-																		on:click={() =>
-																			deleteTransportationFromItinerary(item, resolvedObj)}
-																	>
-																		{$t('adventures.delete')}
-																	</button>
-																</div>
-															{/if}
-														</div>
+														<TransportationCard
+															transportation={resolvedObj}
+															{user}
+															{collection}
+															itineraryItem={item}
+															compact={true}
+															showImage={false}
+															on:delete={handleItemDelete}
+															on:removeFromItinerary={handleRemoveItineraryItem}
+															on:edit={handleEditTransportation}
+															on:moveToGlobal={(e) => moveItemToGlobal(e.detail.type, e.detail.id)}
+															on:changeDay={(e) =>
+																handleOpenDayPickerForItem(
+																	e.detail.type,
+																	e.detail.item,
+																	e.detail.forcePicker,
+																	day.date
+																)}
+														/>
 													{:else}
 														{#if multiDay && objectType === 'lodging'}
 															<div class="mb-2">
@@ -3443,6 +3374,9 @@
 										transportation={item}
 										{user}
 										{collection}
+										readOnly={!canModify}
+										compact={true}
+										showImage={false}
 										on:delete={handleItemDelete}
 										on:edit={handleEditTransportation}
 									/>

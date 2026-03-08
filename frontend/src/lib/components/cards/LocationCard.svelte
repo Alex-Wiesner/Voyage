@@ -23,8 +23,6 @@
 	import DeleteWarning from '../DeleteWarning.svelte';
 	import CardCarousel from '../CardCarousel.svelte';
 	import { t } from 'svelte-i18n';
-	import Star from '~icons/mdi/star';
-	import StarOutline from '~icons/mdi/star-outline';
 	import Eye from '~icons/mdi/eye';
 	import EyeOff from '~icons/mdi/eye-off';
 	import CollectionItineraryPlanner from '../collections/CollectionItineraryPlanner.svelte';
@@ -111,16 +109,6 @@
 	$: creatorDisplayName = adventure.user?.first_name
 		? `${adventure.user.first_name} ${adventure.user.last_name || ''}`.trim()
 		: adventure.user?.username || 'Unknown User';
-
-	// Helper functions for display
-
-	function renderStars(rating: number) {
-		const stars = [];
-		for (let i = 1; i <= 5; i++) {
-			stars.push(i <= rating);
-		}
-		return stars;
-	}
 
 	function changeDay() {
 		dispatch('changeDay', { type: 'location', item: adventure, forcePicker: true });
@@ -577,7 +565,7 @@
 			</div>
 		</div>
 
-		<!-- Inline stats: location, rating, visits -->
+		<!-- Inline stats: location and price -->
 		<div
 			class="flex flex-wrap items-center text-base-content/70 min-w-0"
 			class:gap-2={compact}
@@ -589,21 +577,6 @@
 				<div class="flex items-center gap-1 min-w-0">
 					<MapMarker class="w-4 h-4 text-primary" />
 					<span class="truncate max-w-[18rem]">{adventure.location}</span>
-				</div>
-			{/if}
-
-			{#if adventure.rating}
-				<div class="flex items-center gap-1">
-					<div class="flex -ml-1">
-						{#each renderStars(adventure.rating) as filled}
-							{#if filled}
-								<Star class="w-4 h-4 text-warning fill-current" />
-							{:else}
-								<StarOutline class="w-4 h-4 text-base-content/30" />
-							{/if}
-						{/each}
-					</div>
-					<span class="text-xs text-base-content/60">({adventure.rating}/5)</span>
 				</div>
 			{/if}
 
