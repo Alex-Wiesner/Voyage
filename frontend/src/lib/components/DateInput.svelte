@@ -45,8 +45,15 @@
 		disabled={disabled || readonly}
 	>
 		<span class={displayDate ? '' : 'opacity-40'}>{displayDate || 'DD/MM/YYYY'}</span>
-		<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-60" viewBox="0 0 24 24" fill="currentColor">
-			<path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H5V8h14v13zM7 10h5v5H7z"/>
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			class="h-4 w-4 opacity-60"
+			viewBox="0 0 24 24"
+			fill="currentColor"
+		>
+			<path
+				d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 18H5V8h14v13zM7 10h5v5H7z"
+			/>
 		</svg>
 	</button>
 	<input

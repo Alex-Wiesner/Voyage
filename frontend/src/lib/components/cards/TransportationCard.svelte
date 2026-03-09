@@ -359,7 +359,9 @@
 					<div
 						class="badge badge-sm p-1 rounded-full text-base-content shadow-sm"
 						role="img"
-						aria-label={transportation.is_public ? $t('adventures.public') : $t('adventures.private')}
+						aria-label={transportation.is_public
+							? $t('adventures.public')
+							: $t('adventures.private')}
 					>
 						{#if transportation.is_public}
 							<Eye class="w-4 h-4" />
@@ -516,7 +518,6 @@
 			{#if travelDurationLabel}
 				<span class="badge badge-ghost badge-sm">⏱️ {travelDurationLabel}</span>
 			{/if}
-
 		</div>
 	</div>
 </div>

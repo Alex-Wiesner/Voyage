@@ -344,11 +344,7 @@
 											{$t('adventures.start_date')}
 										</span>
 									</label>
-									<DateInput
-										id="start_date"
-										name="start_date"
-										bind:value={collection.start_date}
-									/>
+									<DateInput id="start_date" name="start_date" bind:value={collection.start_date} />
 								</div>
 
 								<!-- End Date -->
@@ -359,11 +355,7 @@
 											{$t('adventures.end_date')}
 										</span>
 									</label>
-									<DateInput
-										id="end_date"
-										name="end_date"
-										bind:value={collection.end_date}
-									/>
+									<DateInput id="end_date" name="end_date" bind:value={collection.end_date} />
 								</div>
 
 								<!-- Public Toggle -->

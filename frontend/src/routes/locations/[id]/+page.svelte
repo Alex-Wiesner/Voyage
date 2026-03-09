@@ -511,24 +511,25 @@
 															<div class="text-sm">
 																{#if visit.timezone}
 																	<strong>{$t('adventures.start')}:</strong>
-													{DateTime.fromISO(visit.start_date, { zone: 'utc' })
-														.setZone(visit.timezone)
-														.toLocaleString(DateTime.DATETIME_MED, { locale: 'en-GB' })}<br />
-													<strong>{$t('adventures.end')}:</strong>
-													{DateTime.fromISO(visit.end_date, { zone: 'utc' })
-														.setZone(visit.timezone)
-														.toLocaleString(DateTime.DATETIME_MED, { locale: 'en-GB' })}
-												{:else}
-													<strong>Start:</strong>
-													{DateTime.fromISO(visit.start_date).toLocaleString(
-														DateTime.DATETIME_MED,
-														{ locale: 'en-GB' }
-													)}<br />
-													<strong>End:</strong>
-													{DateTime.fromISO(visit.end_date).toLocaleString(
-														DateTime.DATETIME_MED,
-														{ locale: 'en-GB' }
-													)}
+																	{DateTime.fromISO(visit.start_date, { zone: 'utc' })
+																		.setZone(visit.timezone)
+																		.toLocaleString(DateTime.DATETIME_MED, { locale: 'en-GB' })}<br
+																	/>
+																	<strong>{$t('adventures.end')}:</strong>
+																	{DateTime.fromISO(visit.end_date, { zone: 'utc' })
+																		.setZone(visit.timezone)
+																		.toLocaleString(DateTime.DATETIME_MED, { locale: 'en-GB' })}
+																{:else}
+																	<strong>Start:</strong>
+																	{DateTime.fromISO(visit.start_date).toLocaleString(
+																		DateTime.DATETIME_MED,
+																		{ locale: 'en-GB' }
+																	)}<br />
+																	<strong>End:</strong>
+																	{DateTime.fromISO(visit.end_date).toLocaleString(
+																		DateTime.DATETIME_MED,
+																		{ locale: 'en-GB' }
+																	)}
 																{/if}
 															</div>
 														</div>

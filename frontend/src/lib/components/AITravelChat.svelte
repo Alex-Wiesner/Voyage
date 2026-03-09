@@ -69,6 +69,7 @@
 
 	const MODEL_PREFS_STORAGE_KEY = 'voyage_chat_model_prefs';
 	let initializedModelProvider = '';
+	$: promptTripContext = collectionName || destination || '';
 
 	onMount(async () => {
 		await Promise.all([loadConversations(), loadProviderCatalog()]);
@@ -374,7 +375,7 @@
 			result.name === 'search_places' &&
 			typeof result.result === 'object' &&
 			result.result !== null &&
-			Array.isArray((result.result as { places?: unknown[] }).places)
+			Array.isArray((result.result as { results?: unknown[] }).results)
 		);
 	}
 
@@ -383,7 +384,7 @@
 			return [];
 		}
 
-		return (result.result as { places: any[] }).places;
+		return (result.result as { results: any[] }).results;
 	}
 
 	function hasWebSearchResults(result: ToolResultEntry): boolean {
@@ -764,11 +765,13 @@
 					<div class="p-4 border-t border-base-300">
 						<div class="max-w-4xl mx-auto">
 							<div class="flex flex-wrap gap-2 mb-3">
-								{#if destination}
+								{#if promptTripContext}
 									<button
 										class="btn btn-sm btn-ghost"
 										on:click={() =>
-											sendPresetMessage(`What are the best restaurants in ${destination}?`)}
+											sendPresetMessage(
+												`What are the best restaurants to include across my ${promptTripContext} itinerary?`
+											)}
 										disabled={isStreaming || chatProviders.length === 0}
 									>
 										🍽️ Restaurants
@@ -776,7 +779,9 @@
 									<button
 										class="btn btn-sm btn-ghost"
 										on:click={() =>
-											sendPresetMessage(`What activities can I do in ${destination}?`)}
+											sendPresetMessage(
+												`What activities should I plan across my ${promptTripContext} itinerary?`
+											)}
 										disabled={isStreaming || chatProviders.length === 0}
 									>
 										🎯 Activities

@@ -333,12 +333,12 @@
 						<div class="flex items-center justify-center gap-2 text-base-content/60">
 							<Calendar class="w-5 h-5" />
 							<span class="text-lg">
-							{$t('profile.member_since')}
-							{new Date(user.date_joined).toLocaleDateString('en-GB', {
-								timeZone: 'UTC',
-								year: 'numeric',
-								month: 'long'
-							})}
+								{$t('profile.member_since')}
+								{new Date(user.date_joined).toLocaleDateString('en-GB', {
+									timeZone: 'UTC',
+									year: 'numeric',
+									month: 'long'
+								})}
 							</span>
 						</div>
 					{/if}

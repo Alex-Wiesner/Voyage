@@ -28,7 +28,7 @@
 	import FolderMultiple from '~icons/mdi/folder-multiple';
 	import FormatListBulleted from '~icons/mdi/format-list-bulleted';
 	import Timeline from '~icons/mdi/timeline';
-	import Map from '~icons/mdi/map';
+	import MapIcon from '~icons/mdi/map';
 	import Lightbulb from '~icons/mdi/lightbulb';
 	import ChartBar from '~icons/mdi/chart-bar';
 	import Plus from '~icons/mdi/plus';
@@ -261,20 +261,43 @@
 			return undefined;
 		}
 
-		const firstLocation = current.locations.find((loc) =>
-			Boolean(loc.city?.name || loc.country?.name || loc.location || loc.name)
-		);
-		if (!firstLocation) {
+		const maxStops = 4;
+		const stops: string[] = [];
+		const seen = new Set<string>();
+
+		for (const loc of current.locations) {
+			const cityName = loc.city?.name?.trim();
+			const countryName = loc.country?.name?.trim();
+
+			if (cityName || countryName) {
+				const label =
+					cityName && countryName ? `${cityName}, ${countryName}` : cityName || countryName;
+				if (!label) continue;
+				const key = `geo:${(cityName || '').toLowerCase()}|${(countryName || '').toLowerCase()}`;
+				if (seen.has(key)) continue;
+				seen.add(key);
+				stops.push(label);
+				continue;
+			}
+
+			const fallbackName = (loc.location || loc.name || '').trim();
+			if (!fallbackName) continue;
+			const key = `name:${fallbackName.toLowerCase()}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			stops.push(fallbackName);
+		}
+
+		if (stops.length === 0) {
 			return undefined;
 		}
 
-		const cityName = firstLocation.city?.name;
-		const countryName = firstLocation.country?.name;
-		if (cityName && countryName) {
-			return `${cityName}, ${countryName}`;
+		const summarizedStops = stops.slice(0, maxStops).join('; ');
+		if (stops.length > maxStops) {
+			return `${summarizedStops}; +${stops.length - maxStops} more`;
 		}
 
-		return cityName || countryName || firstLocation.location || firstLocation.name || undefined;
+		return summarizedStops;
 	}
 
 	$: collectionDestination = deriveCollectionDestination(collection);
@@ -1138,7 +1161,7 @@
 						class:btn-active={currentView === 'map'}
 						on:click={() => switchView('map')}
 					>
-						<Map class="w-5 h-5 sm:mr-2" aria-hidden="true" />
+						<MapIcon class="w-5 h-5 sm:mr-2" aria-hidden="true" />
 						<span class="hidden sm:inline">{$t('navbar.map')}</span>
 					</button>
 				{/if}

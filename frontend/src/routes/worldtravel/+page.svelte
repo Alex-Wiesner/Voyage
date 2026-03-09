@@ -726,14 +726,14 @@
 										<p class="text-sm">{$t('worldtravel.no_country_data_available_desc')}</p>
 									</div>
 								</div>
-							<a
-								class="link link-primary mt-4 inline-block"
-								href="https://github.com/Alex-Wiesner/voyage/blob/main/documentation/docs/configuration/updating.md#updating-region-data"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								{$t('settings.documentation_link')}
-							</a>
+								<a
+									class="link link-primary mt-4 inline-block"
+									href="https://github.com/Alex-Wiesner/voyage/blob/main/documentation/docs/configuration/updating.md#updating-region-data"
+									target="_blank"
+									rel="noopener noreferrer"
+								>
+									{$t('settings.documentation_link')}
+								</a>
 							</div>
 						{/if}
 					</div>

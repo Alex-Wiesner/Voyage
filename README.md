@@ -114,7 +114,9 @@ Voyage includes an AI-powered travel chat assistant embedded in the Collections 
 
 - **Provider catalog**: The backend dynamically lists all supported LLM providers via `GET /api/chat/providers/`, sourced from LiteLLM's runtime provider list plus custom entries.
 - **Supported providers include**: OpenAI, Anthropic, Google Gemini, Ollama, Groq, Mistral, GitHub Models, OpenRouter, and OpenCode Zen.
-- **OpenCode Zen**: An OpenAI-compatible provider (`opencode_zen`) routed through `https://opencode.ai/zen/v1`.
+- **OpenCode Zen**: An OpenAI-compatible provider (`opencode_zen`) routed through `https://opencode.ai/zen/v1`. Default model: `openai/gpt-5-nano`.
+- **Model selection**: The chat composer includes a model override input next to the provider selector. Type any model string supported by the chosen provider (e.g. `openai/gpt-5-nano`, `anthropic/claude-sonnet-4-20250514`). Your model preference is saved per-provider in the browser.
+- **Error handling**: Provider errors (auth failures, model not found, rate limits, timeouts) are surfaced as actionable messages in the chat — no raw error details are exposed.
 - **Configuration**: Users add API keys for their chosen provider in Settings → API Keys. No server-side environment variables required for chat providers — all keys are per-user.
 
 ### Travel Agent (MCP)

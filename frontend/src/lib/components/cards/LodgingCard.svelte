@@ -93,15 +93,15 @@
 	$: compactStayMeta = [
 		lodging.check_in
 			? {
-				label: 'IN',
-				value: formatStayDateTime(lodging.check_in)
-			}
+					label: 'IN',
+					value: formatStayDateTime(lodging.check_in)
+				}
 			: null,
 		lodging.check_out
 			? {
-				label: 'OUT',
-				value: formatStayDateTime(lodging.check_out)
-			}
+					label: 'OUT',
+					value: formatStayDateTime(lodging.check_out)
+				}
 			: null
 	].filter((entry): entry is { label: string; value: string | null } => Boolean(entry));
 
@@ -353,8 +353,12 @@
 					>
 						<div class="space-y-1">
 							{#each compactStayMeta as stayMeta}
-								<div class="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-1 leading-tight">
-									<div class="text-[9px] font-medium uppercase tracking-[0.14em] text-base-content/50">
+								<div
+									class="grid grid-cols-[2.25rem_minmax(0,1fr)] items-baseline gap-1 leading-tight"
+								>
+									<div
+										class="text-[9px] font-medium uppercase tracking-[0.14em] text-base-content/50"
+									>
 										{stayMeta.label}
 									</div>
 									<div

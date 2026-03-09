@@ -710,7 +710,6 @@
 								</div>
 							</div>
 						{/if}
-
 					</div>
 
 					<!-- Right Column -->

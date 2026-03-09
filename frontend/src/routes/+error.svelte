@@ -52,8 +52,7 @@
 						class="link link-primary"
 						target="_blank"
 						rel="noopener noreferrer"
-						href="https://github.com/Alex-Wiesner/voyage"
-						>documentation</a
+						href="https://github.com/Alex-Wiesner/voyage">documentation</a
 					>.
 				</p>
 			</div>

@@ -362,20 +362,20 @@
 									zoom={13}
 								>
 									<DefaultMarker lngLat={[lodging.longitude, lodging.latitude]}>
-									<Popup openOn="click" offset={[0, -10]}>
-										<div class="p-2">
-											<div class="text-lg font-bold text-black mb-1">{lodging.name}</div>
-											<p class="font-semibold text-black text-sm mb-2">
-												{$t(`lodging.${lodging.type}`)}
-												{getLodgingIcon(lodging.type)}
-											</p>
-											{#if lodging.location}
-												<div class="text-xs text-black">
-													📍 {lodging.location}
-												</div>
-											{/if}
-										</div>
-									</Popup>
+										<Popup openOn="click" offset={[0, -10]}>
+											<div class="p-2">
+												<div class="text-lg font-bold text-black mb-1">{lodging.name}</div>
+												<p class="font-semibold text-black text-sm mb-2">
+													{$t(`lodging.${lodging.type}`)}
+													{getLodgingIcon(lodging.type)}
+												</p>
+												{#if lodging.location}
+													<div class="text-xs text-black">
+														📍 {lodging.location}
+													</div>
+												{/if}
+											</div>
+										</Popup>
 									</DefaultMarker>
 								</MapLibre>
 							</div>

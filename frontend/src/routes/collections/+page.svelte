@@ -348,12 +348,12 @@
 						<h3 class="text-xl font-semibold text-base-content/70 mb-2">
 							{activeView === 'collections'
 								? $t('collection.no_collections_yet')
-									: $t('collection.no_archived_collections')}
+								: $t('collection.no_archived_collections')}
 						</h3>
 						<p class="text-base-content/50 text-center max-w-md">
 							{activeView === 'collections'
 								? $t('collection.create_first')
-									: $t('collection.archived_appear_here')}
+								: $t('collection.archived_appear_here')}
 						</p>
 						{#if activeView === 'collections'}
 							<button
@@ -426,137 +426,137 @@
 
 					<!-- Status Filter -->
 					<div class="card bg-base-200/50 p-4 mb-4">
-							<h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
-								<Filter class="w-5 h-5" />
-								{$t('adventures.status_filter')}
-							</h3>
+						<h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
+							<Filter class="w-5 h-5" />
+							{$t('adventures.status_filter')}
+						</h3>
 
-							<div class="space-y-2">
-								<label class="label cursor-pointer justify-start gap-3">
-									<input
-										type="radio"
-										name="status_filter"
-										class="radio radio-primary radio-sm"
-										checked={statusFilter === ''}
-										on:change={() => updateStatusFilter('')}
-									/>
-									<span class="label-text">{$t('adventures.all')}</span>
-								</label>
-								<label class="label cursor-pointer justify-start gap-3">
-									<input
-										type="radio"
-										name="status_filter"
-										class="radio radio-primary radio-sm"
-										checked={statusFilter === 'folder'}
-										on:change={() => updateStatusFilter('folder')}
-									/>
-									<span class="label-text">📁 {$t('adventures.folder')}</span>
-								</label>
-								<label class="label cursor-pointer justify-start gap-3">
-									<input
-										type="radio"
-										name="status_filter"
-										class="radio radio-primary radio-sm"
-										checked={statusFilter === 'upcoming'}
-										on:change={() => updateStatusFilter('upcoming')}
-									/>
-									<span class="label-text">🚀 {$t('adventures.upcoming')}</span>
-								</label>
-								<label class="label cursor-pointer justify-start gap-3">
-									<input
-										type="radio"
-										name="status_filter"
-										class="radio radio-primary radio-sm"
-										checked={statusFilter === 'in_progress'}
-										on:change={() => updateStatusFilter('in_progress')}
-									/>
-									<span class="label-text">🎯 {$t('adventures.in_progress')}</span>
-								</label>
-								<label class="label cursor-pointer justify-start gap-3">
-									<input
-										type="radio"
-										name="status_filter"
-										class="radio radio-primary radio-sm"
-										checked={statusFilter === 'completed'}
-										on:change={() => updateStatusFilter('completed')}
-									/>
-									<span class="label-text">✓ {$t('adventures.completed')}</span>
-								</label>
-							</div>
+						<div class="space-y-2">
+							<label class="label cursor-pointer justify-start gap-3">
+								<input
+									type="radio"
+									name="status_filter"
+									class="radio radio-primary radio-sm"
+									checked={statusFilter === ''}
+									on:change={() => updateStatusFilter('')}
+								/>
+								<span class="label-text">{$t('adventures.all')}</span>
+							</label>
+							<label class="label cursor-pointer justify-start gap-3">
+								<input
+									type="radio"
+									name="status_filter"
+									class="radio radio-primary radio-sm"
+									checked={statusFilter === 'folder'}
+									on:change={() => updateStatusFilter('folder')}
+								/>
+								<span class="label-text">📁 {$t('adventures.folder')}</span>
+							</label>
+							<label class="label cursor-pointer justify-start gap-3">
+								<input
+									type="radio"
+									name="status_filter"
+									class="radio radio-primary radio-sm"
+									checked={statusFilter === 'upcoming'}
+									on:change={() => updateStatusFilter('upcoming')}
+								/>
+								<span class="label-text">🚀 {$t('adventures.upcoming')}</span>
+							</label>
+							<label class="label cursor-pointer justify-start gap-3">
+								<input
+									type="radio"
+									name="status_filter"
+									class="radio radio-primary radio-sm"
+									checked={statusFilter === 'in_progress'}
+									on:change={() => updateStatusFilter('in_progress')}
+								/>
+								<span class="label-text">🎯 {$t('adventures.in_progress')}</span>
+							</label>
+							<label class="label cursor-pointer justify-start gap-3">
+								<input
+									type="radio"
+									name="status_filter"
+									class="radio radio-primary radio-sm"
+									checked={statusFilter === 'completed'}
+									on:change={() => updateStatusFilter('completed')}
+								/>
+								<span class="label-text">✓ {$t('adventures.completed')}</span>
+							</label>
+						</div>
 					</div>
 
 					<!-- Sort Form - Updated to use URL navigation -->
 					<div class="card bg-base-200/50 p-4">
-							<h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
-								<Sort class="w-5 h-5" />
-								{$t(`adventures.sort`)}
-							</h3>
+						<h3 class="font-semibold text-lg mb-4 flex items-center gap-2">
+							<Sort class="w-5 h-5" />
+							{$t(`adventures.sort`)}
+						</h3>
 
-							<div class="space-y-4">
-								<div>
-									<!-- svelte-ignore a11y-label-has-associated-control -->
-									<label class="label">
-										<span class="label-text font-medium">{$t(`adventures.order_direction`)}</span>
-									</label>
-									<div class="join w-full">
-										<button
-											class="join-item btn btn-sm flex-1 {orderDirection === 'asc'
-												? 'btn-active'
-												: ''}"
-											on:click={() => updateSort(orderBy, 'asc')}
-										>
-											{$t(`adventures.ascending`)}
-										</button>
-										<button
-											class="join-item btn btn-sm flex-1 {orderDirection === 'desc'
-												? 'btn-active'
-												: ''}"
-											on:click={() => updateSort(orderBy, 'desc')}
-										>
-											{$t(`adventures.descending`)}
-										</button>
-									</div>
-								</div>
-
-								<div>
-									<!-- svelte-ignore a11y-label-has-associated-control -->
-									<label class="label">
-										<span class="label-text font-medium">{$t('adventures.order_by')}</span>
-									</label>
-									<div class="space-y-2">
-										<label class="label cursor-pointer justify-start gap-3">
-											<input
-												type="radio"
-												name="order_by_radio"
-												class="radio radio-primary radio-sm"
-												checked={orderBy === 'updated_at'}
-												on:change={() => updateSort('updated_at', orderDirection)}
-											/>
-											<span class="label-text">{$t('adventures.updated')}</span>
-										</label>
-										<label class="label cursor-pointer justify-start gap-3">
-											<input
-												type="radio"
-												name="order_by_radio"
-												class="radio radio-primary radio-sm"
-												checked={orderBy === 'start_date'}
-												on:change={() => updateSort('start_date', orderDirection)}
-											/>
-											<span class="label-text">{$t('adventures.start_date')}</span>
-										</label>
-										<label class="label cursor-pointer justify-start gap-3">
-											<input
-												type="radio"
-												name="order_by_radio"
-												class="radio radio-primary radio-sm"
-												checked={orderBy === 'name'}
-												on:change={() => updateSort('name', orderDirection)}
-											/>
-											<span class="label-text">{$t('adventures.name')}</span>
-										</label>
-									</div>
+						<div class="space-y-4">
+							<div>
+								<!-- svelte-ignore a11y-label-has-associated-control -->
+								<label class="label">
+									<span class="label-text font-medium">{$t(`adventures.order_direction`)}</span>
+								</label>
+								<div class="join w-full">
+									<button
+										class="join-item btn btn-sm flex-1 {orderDirection === 'asc'
+											? 'btn-active'
+											: ''}"
+										on:click={() => updateSort(orderBy, 'asc')}
+									>
+										{$t(`adventures.ascending`)}
+									</button>
+									<button
+										class="join-item btn btn-sm flex-1 {orderDirection === 'desc'
+											? 'btn-active'
+											: ''}"
+										on:click={() => updateSort(orderBy, 'desc')}
+									>
+										{$t(`adventures.descending`)}
+									</button>
 								</div>
 							</div>
+
+							<div>
+								<!-- svelte-ignore a11y-label-has-associated-control -->
+								<label class="label">
+									<span class="label-text font-medium">{$t('adventures.order_by')}</span>
+								</label>
+								<div class="space-y-2">
+									<label class="label cursor-pointer justify-start gap-3">
+										<input
+											type="radio"
+											name="order_by_radio"
+											class="radio radio-primary radio-sm"
+											checked={orderBy === 'updated_at'}
+											on:change={() => updateSort('updated_at', orderDirection)}
+										/>
+										<span class="label-text">{$t('adventures.updated')}</span>
+									</label>
+									<label class="label cursor-pointer justify-start gap-3">
+										<input
+											type="radio"
+											name="order_by_radio"
+											class="radio radio-primary radio-sm"
+											checked={orderBy === 'start_date'}
+											on:change={() => updateSort('start_date', orderDirection)}
+										/>
+										<span class="label-text">{$t('adventures.start_date')}</span>
+									</label>
+									<label class="label cursor-pointer justify-start gap-3">
+										<input
+											type="radio"
+											name="order_by_radio"
+											class="radio radio-primary radio-sm"
+											checked={orderBy === 'name'}
+											on:change={() => updateSort('name', orderDirection)}
+										/>
+										<span class="label-text">{$t('adventures.name')}</span>
+									</label>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>

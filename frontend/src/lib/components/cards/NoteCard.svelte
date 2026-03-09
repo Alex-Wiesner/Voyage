@@ -120,8 +120,7 @@
 						{#if note.date && note.date !== ''}
 							<div class="flex items-center gap-2">
 								<Calendar class="w-4 h-4 text-primary" />
-							<span>{new Date(note.date).toLocaleDateString('en-GB', { timeZone: 'UTC' })}</span
-							>
+								<span>{new Date(note.date).toLocaleDateString('en-GB', { timeZone: 'UTC' })}</span>
 							</div>
 						{/if}
 						{#if note.links && note.links?.length > 0}

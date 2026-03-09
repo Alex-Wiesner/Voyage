@@ -1191,12 +1191,12 @@
 															class="label-text text-xs font-medium"
 															for="start-date-{visit.id}">{$t('adventures.start_date')}</label
 														>
-													<DateTimeInput
-														id="start-date-{visit.id}"
-														inputClass="input input-bordered input-sm w-full mt-1"
-														bind:value={activityForm.start_date}
-														readonly={!!pendingStravaImport[visit.id]}
-													/>
+														<DateTimeInput
+															id="start-date-{visit.id}"
+															inputClass="input input-bordered input-sm w-full mt-1"
+															bind:value={activityForm.start_date}
+															readonly={!!pendingStravaImport[visit.id]}
+														/>
 													</div>
 
 													<!-- Elevation Gain -->

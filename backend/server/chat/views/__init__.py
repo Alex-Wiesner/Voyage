@@ -163,6 +163,41 @@ class ChatViewSet(viewsets.ModelViewSet):
             except Collection.DoesNotExist:
                 pass
 
+        if collection:
+            itinerary_stops = []
+            seen_stops = set()
+            for location in collection.locations.select_related(
+                "city", "country"
+            ).all():
+                city_name = (getattr(location.city, "name", "") or "").strip()
+                country_name = (getattr(location.country, "name", "") or "").strip()
+
+                if city_name or country_name:
+                    stop_label = (
+                        f"{city_name}, {country_name}"
+                        if city_name and country_name
+                        else city_name or country_name
+                    )
+                    stop_key = f"geo:{city_name.lower()}|{country_name.lower()}"
+                else:
+                    fallback_name = (location.location or location.name or "").strip()
+                    if not fallback_name:
+                        continue
+                    stop_label = fallback_name
+                    stop_key = f"name:{fallback_name.lower()}"
+
+                if stop_key in seen_stops:
+                    continue
+
+                seen_stops.add(stop_key)
+                itinerary_stops.append(stop_label)
+
+                if len(itinerary_stops) >= 8:
+                    break
+
+            if itinerary_stops:
+                context_parts.append(f"Itinerary stops: {'; '.join(itinerary_stops)}")
+
         system_prompt = get_system_prompt(request.user, collection)
         if context_parts:
             system_prompt += "\n\n## Trip Context\n" + "\n".join(context_parts)
@@ -338,7 +373,7 @@ class ChatProviderCatalogViewSet(viewsets.ViewSet):
     @action(detail=True, methods=["get"])
     def models(self, request, pk=None):
         """Fetch available models from a provider's API."""
-        from chat.llm_client import get_llm_api_key
+        from chat.llm_client import CHAT_PROVIDER_CONFIG, get_llm_api_key
 
         provider = (pk or "").lower()
 
@@ -414,8 +449,38 @@ class ChatProviderCatalogViewSet(viewsets.ViewSet):
                     pass
                 return Response({"models": []})
 
-            if provider in ["opencode_zen"]:
-                return Response({"models": ["openai/gpt-5-nano"]})
+            if provider == "opencode_zen":
+                import requests
+
+                config = CHAT_PROVIDER_CONFIG.get("opencode_zen", {})
+                api_base = config.get("api_base", "https://opencode.ai/zen/v1")
+                response = requests.get(
+                    f"{api_base}/models",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    timeout=10,
+                )
+
+                if response.ok:
+                    data = response.json()
+                    raw_models = (
+                        data.get("data", data) if isinstance(data, dict) else data
+                    )
+                    model_ids = []
+                    for model_entry in raw_models:
+                        if not isinstance(model_entry, dict):
+                            continue
+
+                        model_id = model_entry.get("id") or model_entry.get("model_id")
+                        if model_id:
+                            model_ids.append(model_id)
+
+                    return Response({"models": sorted(set(model_ids))})
+
+                logger.warning(
+                    "OpenCode Zen models fetch failed with status %s",
+                    response.status_code,
+                )
+                return Response({"models": []})
 
             return Response({"models": []})
         except Exception as exc:

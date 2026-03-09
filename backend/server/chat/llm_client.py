@@ -329,6 +329,11 @@ When modifying itineraries:
 - Suggest logical ordering based on geography
 - Consider travel time between locations
 
+When chat context includes a trip collection:
+- Treat context as itinerary-wide (potentially multiple stops), not a single destination
+- Use get_trip_details first when you need complete collection context before searching for places
+- Ground place searches in trip stops and dates from the provided trip context
+
 Be conversational, helpful, and enthusiastic about travel. Keep responses concise but informative."""
 
     if collection and collection.shared_with.count() > 0:
@@ -389,8 +394,8 @@ async def stream_chat_completion(user, messages, provider, tools=None, model=Non
         yield f"data: {json.dumps(payload)}\n\n"
         return
 
-    completion_kwargs = {
-        "model": model
+    resolved_model = (
+        model
         or (
             settings.VOYAGE_AI_MODEL
             if normalized_provider
@@ -398,10 +403,34 @@ async def stream_chat_completion(user, messages, provider, tools=None, model=Non
             and settings.VOYAGE_AI_MODEL
             else None
         )
-        or provider_config["default_model"],
+        or provider_config["default_model"]
+    )
+
+    if tools and not litellm.supports_function_calling(model=resolved_model):
+        logger.warning(
+            "Model %s does not support function calling, disabling tools",
+            resolved_model,
+        )
+        tools = None
+
+    logger.info(
+        "Chat request: provider=%s, model=%s, has_tools=%s",
+        normalized_provider,
+        resolved_model,
+        bool(tools),
+    )
+    logger.debug(
+        "API base: %s, messages count: %s",
+        provider_config.get("api_base"),
+        len(messages),
+    )
+
+    completion_kwargs = {
+        "model": resolved_model,
         "messages": messages,
         "stream": True,
         "api_key": api_key,
+        "num_retries": 2,
     }
     if tools:
         completion_kwargs["tools"] = tools
@@ -448,6 +477,7 @@ async def stream_chat_completion(user, messages, provider, tools=None, model=Non
 
         yield "data: [DONE]\n\n"
     except Exception as exc:
+        logger.error("LiteLLM error: %s: %s", type(exc).__name__, str(exc)[:200])
         logger.exception("LLM streaming error")
         payload = _safe_error_payload(exc)
         yield f"data: {json.dumps(payload)}\n\n"
