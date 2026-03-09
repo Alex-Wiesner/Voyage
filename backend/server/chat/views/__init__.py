@@ -414,6 +414,9 @@ class ChatProviderCatalogViewSet(viewsets.ViewSet):
                     pass
                 return Response({"models": []})
 
+            if provider in ["opencode_zen"]:
+                return Response({"models": ["openai/gpt-5-nano"]})
+
             return Response({"models": []})
         except Exception as exc:
             logger.error("Failed to fetch models for %s: %s", provider, exc)

@@ -54,6 +54,7 @@
 	let selectedProvider = '';
 	let selectedModel = '';
 	let availableModels: string[] = [];
+	let modelsLoading = false;
 	let chatProviders: ChatProviderCatalogConfiguredEntry[] = [];
 	let providerError = '';
 	let selectedProviderDefaultModel = '';
@@ -117,6 +118,7 @@
 			return;
 		}
 
+		modelsLoading = true;
 		try {
 			const res = await fetch(`/api/chat/providers/${selectedProvider}/models/`, {
 				credentials: 'include'
@@ -134,6 +136,8 @@
 		} catch (e) {
 			console.error('Failed to load models:', e);
 			availableModels = [];
+		} finally {
+			modelsLoading = false;
 		}
 	}
 
@@ -576,9 +580,6 @@
 									{$t('travel_assistant')}
 								{/if}
 							</h3>
-							{#if destination}
-								<p class="text-sm text-base-content/70">{destination}</p>
-							{/if}
 						</div>
 					</div>
 					<div class="ml-auto flex items-center gap-2">
@@ -600,8 +601,10 @@
 							bind:value={selectedModel}
 							disabled={chatProviders.length === 0}
 						>
-							{#if availableModels.length === 0}
+							{#if modelsLoading}
 								<option value="">Loading...</option>
+							{:else if availableModels.length === 0}
+								<option value="">Default</option>
 							{:else}
 								{#each availableModels as model}
 									<option value={model}>{model}</option>

@@ -2,6 +2,7 @@ import json
 import logging
 
 import litellm
+from asgiref.sync import sync_to_async
 from django.conf import settings
 
 from integrations.models import UserAPIKey
@@ -371,7 +372,7 @@ async def stream_chat_completion(user, messages, provider, tools=None, model=Non
         yield f"data: {json.dumps(payload)}\n\n"
         return
 
-    api_key = get_llm_api_key(user, normalized_provider)
+    api_key = await sync_to_async(get_llm_api_key)(user, normalized_provider)
 
     if provider_config["needs_api_key"] and not api_key:
         payload = {
