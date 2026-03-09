@@ -31,6 +31,11 @@
 		tool_results?: ToolResultEntry[];
 	};
 
+	type ChatProviderCatalogConfiguredEntry = ChatProviderCatalogEntry & {
+		instance_configured: boolean;
+		user_configured: boolean;
+	};
+
 	export let embedded = false;
 	export let collectionId: string | undefined = undefined;
 	export let collectionName: string | undefined = undefined;
@@ -46,15 +51,15 @@
 	let sidebarOpen = true;
 	let streamingContent = '';
 
-	let selectedProvider = 'openai';
+	let selectedProvider = '';
 	let selectedModel = '';
-	let providerCatalog: ChatProviderCatalogEntry[] = [];
+	let availableModels: string[] = [];
+	let chatProviders: ChatProviderCatalogConfiguredEntry[] = [];
+	let providerError = '';
+	let selectedProviderDefaultModel = '';
 	let showDateSelector = false;
 	let selectedPlaceToAdd: PlaceResult | null = null;
 	let selectedDate = '';
-	$: chatProviders = providerCatalog.filter((provider) => provider.available_for_chat);
-	$: selectedProviderEntry =
-		chatProviders.find((provider) => provider.id === selectedProvider) ?? null;
 
 	const dispatch = createEventDispatcher<{
 		close: void;
@@ -68,21 +73,67 @@
 		await Promise.all([loadConversations(), loadProviderCatalog()]);
 	});
 
-	async function loadProviderCatalog() {
-		const res = await fetch('/api/chat/providers/');
-		if (!res.ok) {
+	async function loadProviderCatalog(): Promise<void> {
+		try {
+			const res = await fetch('/api/chat/providers/', {
+				credentials: 'include'
+			});
+			if (!res.ok) {
+				providerError = 'Failed to load AI providers';
+				return;
+			}
+
+			const data = await res.json();
+			const providers = Array.isArray(data)
+				? (data as ChatProviderCatalogConfiguredEntry[])
+				: ((data.providers || []) as ChatProviderCatalogConfiguredEntry[]);
+
+			const usable = providers.filter(
+				(provider) =>
+					provider.available_for_chat && (provider.user_configured || provider.instance_configured)
+			);
+			chatProviders = usable;
+
+			if (usable.length > 0) {
+				providerError = '';
+				if (!selectedProvider || !usable.some((provider) => provider.id === selectedProvider)) {
+					const userConfigured = usable.find((provider) => provider.user_configured);
+					selectedProvider = (userConfigured || usable[0]).id;
+				}
+			} else {
+				selectedProvider = '';
+				availableModels = [];
+				providerError = 'No AI providers configured. Add an API key in Settings.';
+			}
+		} catch (e) {
+			console.error('Failed to load provider catalog:', e);
+			providerError = 'Failed to load AI providers';
+		}
+	}
+
+	async function loadModelsForProvider() {
+		if (!selectedProvider) {
+			availableModels = [];
 			return;
 		}
 
-		const catalog = (await res.json()) as ChatProviderCatalogEntry[];
-		providerCatalog = catalog;
-		const availableProviders = catalog.filter((provider) => provider.available_for_chat);
-		if (!availableProviders.length) {
-			return;
-		}
+		try {
+			const res = await fetch(`/api/chat/providers/${selectedProvider}/models/`, {
+				credentials: 'include'
+			});
+			const data = await res.json();
 
-		if (!availableProviders.some((provider) => provider.id === selectedProvider)) {
-			selectedProvider = availableProviders[0].id;
+			if (data.models && data.models.length > 0) {
+				availableModels = data.models;
+				if (!selectedModel || !availableModels.includes(selectedModel)) {
+					selectedModel = availableModels[0];
+				}
+			} else {
+				availableModels = [];
+			}
+		} catch (e) {
+			console.error('Failed to load models:', e);
+			availableModels = [];
 		}
 	}
 
@@ -120,14 +171,20 @@
 		}
 	}
 
-	$: if (selectedProviderEntry && initializedModelProvider !== selectedProvider) {
-		selectedModel =
-			loadModelPref(selectedProvider) || (selectedProviderEntry.default_model ?? '') || '';
+	$: if (selectedProvider && initializedModelProvider !== selectedProvider) {
+		selectedModel = loadModelPref(selectedProvider) || selectedProviderDefaultModel || '';
 		initializedModelProvider = selectedProvider;
 	}
 
-	$: if (selectedProviderEntry && initializedModelProvider === selectedProvider) {
+	$: if (selectedProvider && initializedModelProvider === selectedProvider) {
 		saveModelPref(selectedProvider, selectedModel);
+	}
+
+	$: selectedProviderDefaultModel =
+		chatProviders.find((provider) => provider.id === selectedProvider)?.default_model ?? '';
+
+	$: if (selectedProvider) {
+		void loadModelsForProvider();
 	}
 
 	async function loadConversations() {
@@ -199,7 +256,7 @@
 				body: JSON.stringify({
 					message: msgText,
 					provider: selectedProvider,
-					model: selectedModel.trim() || undefined,
+					model: selectedModel || undefined,
 					collection_id: collectionId,
 					collection_name: collectionName,
 					start_date: startDate,
@@ -525,233 +582,251 @@
 						</div>
 					</div>
 					<div class="ml-auto flex items-center gap-2">
-						<label for="chat-model-input" class="text-xs opacity-70 whitespace-nowrap"
-							>{$t('chat.model_label')}</label
-						>
-						<input
-							id="chat-model-input"
-							type="text"
-							class="input input-bordered input-sm w-44"
-							bind:value={selectedModel}
-							placeholder={selectedProviderEntry?.default_model || $t('chat.model_placeholder')}
-							disabled={chatProviders.length === 0}
-						/>
 						<select
 							class="select select-bordered select-sm"
 							bind:value={selectedProvider}
 							disabled={chatProviders.length === 0}
 						>
 							{#each chatProviders as provider}
-								<option value={provider.id}>{provider.label}</option>
+								<option value={provider.id}>
+									{provider.label}
+									{#if provider.user_configured}
+										✓{/if}
+								</option>
 							{/each}
+						</select>
+						<select
+							class="select select-bordered select-sm"
+							bind:value={selectedModel}
+							disabled={chatProviders.length === 0}
+						>
+							{#if availableModels.length === 0}
+								<option value="">Loading...</option>
+							{:else}
+								{#each availableModels as model}
+									<option value={model}>{model}</option>
+								{/each}
+							{/if}
 						</select>
 					</div>
 				</div>
 
-				<div class="flex-1 overflow-y-auto p-4 space-y-4" bind:this={messagesContainer}>
-					{#if messages.length === 0 && !activeConversation}
-						<div class="flex flex-col items-center justify-center h-full text-center">
-							<div class="text-6xl opacity-40 mb-4">🌍</div>
-							<h3 class="text-2xl font-bold mb-2">{$t('chat.welcome_title')}</h3>
-							<p class="text-base-content/60 max-w-md">{$t('chat.welcome_message')}</p>
+				{#if chatProviders.length === 0}
+					<div class="p-4">
+						<div class="alert alert-warning">
+							<span
+								>{providerError || 'No AI providers configured.'}
+								<a href="/settings" class="link">Add an API key in Settings</a></span
+							>
 						</div>
-					{:else}
-						{#each messages as msg}
-							<div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
-								{#if msg.role === 'tool'}
-									<div class="max-w-2xl w-full">
-										<div class="bg-base-200 rounded-lg p-3 text-xs space-y-2">
-											<div class="font-semibold mb-1 text-primary">🗺️ {msg.name}</div>
-											{#each parseToolResults(msg) as result}
-												{#if hasPlaceResults(result)}
-													<div class="grid gap-2">
-														{#each getPlaceResults(result) as place}
-															<div class="card card-compact bg-base-100 p-3">
-																<h4 class="font-semibold">{place.name}</h4>
-																{#if place.address}
-																	<p class="text-sm text-base-content/70">{place.address}</p>
-																{/if}
-																{#if place.rating}
-																	<div class="flex items-center gap-1 text-sm">
-																		<span>⭐</span>
-																		<span>{place.rating}</span>
-																	</div>
-																{/if}
-																{#if collectionId}
-																	<button
-																		class="btn btn-xs btn-primary btn-outline mt-2"
-																		on:click={() => openDateSelector(place)}
-																		disabled={!hasPlaceCoordinates(place)}
-																	>
-																		{$t('add_to_itinerary')}
-																	</button>
-																{/if}
-															</div>
+					</div>
+				{:else}
+					<div class="flex-1 overflow-y-auto p-4 space-y-4" bind:this={messagesContainer}>
+						{#if messages.length === 0 && !activeConversation}
+							<div class="flex flex-col items-center justify-center h-full text-center">
+								<div class="text-6xl opacity-40 mb-4">🌍</div>
+								<h3 class="text-2xl font-bold mb-2">{$t('chat.welcome_title')}</h3>
+								<p class="text-base-content/60 max-w-md">{$t('chat.welcome_message')}</p>
+							</div>
+						{:else}
+							{#each messages as msg}
+								<div class="flex {msg.role === 'user' ? 'justify-end' : 'justify-start'}">
+									{#if msg.role === 'tool'}
+										<div class="max-w-2xl w-full">
+											<div class="bg-base-200 rounded-lg p-3 text-xs space-y-2">
+												<div class="font-semibold mb-1 text-primary">🗺️ {msg.name}</div>
+												{#each parseToolResults(msg) as result}
+													{#if hasPlaceResults(result)}
+														<div class="grid gap-2">
+															{#each getPlaceResults(result) as place}
+																<div class="card card-compact bg-base-100 p-3">
+																	<h4 class="font-semibold">{place.name}</h4>
+																	{#if place.address}
+																		<p class="text-sm text-base-content/70">{place.address}</p>
+																	{/if}
+																	{#if place.rating}
+																		<div class="flex items-center gap-1 text-sm">
+																			<span>⭐</span>
+																			<span>{place.rating}</span>
+																		</div>
+																	{/if}
+																	{#if collectionId}
+																		<button
+																			class="btn btn-xs btn-primary btn-outline mt-2"
+																			on:click={() => openDateSelector(place)}
+																			disabled={!hasPlaceCoordinates(place)}
+																		>
+																			{$t('add_to_itinerary')}
+																		</button>
+																	{/if}
+																</div>
+															{/each}
+														</div>
+													{:else if hasWebSearchResults(result)}
+														<div class="grid gap-2">
+															{#each getWebSearchResults(result) as item}
+																<a
+																	href={item.url}
+																	target="_blank"
+																	rel="noopener noreferrer"
+																	class="card card-compact bg-base-100 p-3 hover:bg-base-300 transition-colors block"
+																>
+																	<h4 class="font-semibold link">{item.title}</h4>
+																	<p class="text-sm text-base-content/70 line-clamp-2">
+																		{item.snippet}
+																	</p>
+																</a>
+															{/each}
+														</div>
+													{:else}
+														<div class="bg-base-100 rounded p-2 text-sm">
+															<pre>{JSON.stringify(result.result, null, 2)}</pre>
+														</div>
+													{/if}
+												{/each}
+											</div>
+										</div>
+									{:else}
+										<div class="chat {msg.role === 'user' ? 'chat-end' : 'chat-start'}">
+											<div
+												class="chat-bubble {msg.role === 'user'
+													? 'chat-bubble-primary'
+													: 'chat-bubble-neutral'}"
+											>
+												<div class="whitespace-pre-wrap">{msg.content}</div>
+												{#if msg.role === 'assistant' && msg.tool_results}
+													<div class="mt-2 space-y-2">
+														{#each msg.tool_results as result}
+															{#if hasPlaceResults(result)}
+																<div class="grid gap-2">
+																	{#each getPlaceResults(result) as place}
+																		<div class="card card-compact bg-base-200 p-3">
+																			<h4 class="font-semibold">{place.name}</h4>
+																			{#if place.address}
+																				<p class="text-sm text-base-content/70">{place.address}</p>
+																			{/if}
+																			{#if place.rating}
+																				<div class="flex items-center gap-1 text-sm">
+																					<span>⭐</span>
+																					<span>{place.rating}</span>
+																				</div>
+																			{/if}
+																			{#if collectionId}
+																				<button
+																					class="btn btn-xs btn-primary btn-outline mt-2"
+																					on:click={() => openDateSelector(place)}
+																					disabled={!hasPlaceCoordinates(place)}
+																				>
+																					{$t('add_to_itinerary')}
+																				</button>
+																			{/if}
+																		</div>
+																	{/each}
+																</div>
+															{:else if hasWebSearchResults(result)}
+																<div class="grid gap-2">
+																	{#each getWebSearchResults(result) as item}
+																		<a
+																			href={item.url}
+																			target="_blank"
+																			rel="noopener noreferrer"
+																			class="card card-compact bg-base-200 p-3 hover:bg-base-300 transition-colors block"
+																		>
+																			<h4 class="font-semibold link">{item.title}</h4>
+																			<p class="text-sm text-base-content/70 line-clamp-2">
+																				{item.snippet}
+																			</p>
+																		</a>
+																	{/each}
+																</div>
+															{:else}
+																<div class="bg-base-200 rounded p-2 text-sm">
+																	<pre>{JSON.stringify(result.result, null, 2)}</pre>
+																</div>
+															{/if}
 														{/each}
-													</div>
-												{:else if hasWebSearchResults(result)}
-													<div class="grid gap-2">
-														{#each getWebSearchResults(result) as item}
-															<a
-																href={item.url}
-																target="_blank"
-																rel="noopener noreferrer"
-																class="card card-compact bg-base-100 p-3 hover:bg-base-300 transition-colors block"
-															>
-																<h4 class="font-semibold link">{item.title}</h4>
-																<p class="text-sm text-base-content/70 line-clamp-2">
-																	{item.snippet}
-																</p>
-															</a>
-														{/each}
-													</div>
-												{:else}
-													<div class="bg-base-100 rounded p-2 text-sm">
-														<pre>{JSON.stringify(result.result, null, 2)}</pre>
 													</div>
 												{/if}
-											{/each}
+												{#if msg.role === 'assistant' && isStreaming && msg.id === messages[messages.length - 1]?.id && !msg.content}
+													<span class="loading loading-dots loading-sm"></span>
+												{/if}
+											</div>
 										</div>
-									</div>
-								{:else}
-									<div class="chat {msg.role === 'user' ? 'chat-end' : 'chat-start'}">
-										<div
-											class="chat-bubble {msg.role === 'user'
-												? 'chat-bubble-primary'
-												: 'chat-bubble-neutral'}"
-										>
-											<div class="whitespace-pre-wrap">{msg.content}</div>
-											{#if msg.role === 'assistant' && msg.tool_results}
-												<div class="mt-2 space-y-2">
-													{#each msg.tool_results as result}
-														{#if hasPlaceResults(result)}
-															<div class="grid gap-2">
-																{#each getPlaceResults(result) as place}
-																	<div class="card card-compact bg-base-200 p-3">
-																		<h4 class="font-semibold">{place.name}</h4>
-																		{#if place.address}
-																			<p class="text-sm text-base-content/70">{place.address}</p>
-																		{/if}
-																		{#if place.rating}
-																			<div class="flex items-center gap-1 text-sm">
-																				<span>⭐</span>
-																				<span>{place.rating}</span>
-																			</div>
-																		{/if}
-																		{#if collectionId}
-																			<button
-																				class="btn btn-xs btn-primary btn-outline mt-2"
-																				on:click={() => openDateSelector(place)}
-																				disabled={!hasPlaceCoordinates(place)}
-																			>
-																				{$t('add_to_itinerary')}
-																			</button>
-																		{/if}
-																	</div>
-																{/each}
-															</div>
-														{:else if hasWebSearchResults(result)}
-															<div class="grid gap-2">
-																{#each getWebSearchResults(result) as item}
-																	<a
-																		href={item.url}
-																		target="_blank"
-																		rel="noopener noreferrer"
-																		class="card card-compact bg-base-200 p-3 hover:bg-base-300 transition-colors block"
-																	>
-																		<h4 class="font-semibold link">{item.title}</h4>
-																		<p class="text-sm text-base-content/70 line-clamp-2">
-																			{item.snippet}
-																		</p>
-																	</a>
-																{/each}
-															</div>
-														{:else}
-															<div class="bg-base-200 rounded p-2 text-sm">
-																<pre>{JSON.stringify(result.result, null, 2)}</pre>
-															</div>
-														{/if}
-													{/each}
-												</div>
-											{/if}
-											{#if msg.role === 'assistant' && isStreaming && msg.id === messages[messages.length - 1]?.id && !msg.content}
-												<span class="loading loading-dots loading-sm"></span>
-											{/if}
-										</div>
-									</div>
-								{/if}
-							</div>
-						{/each}
-					{/if}
-				</div>
+									{/if}
+								</div>
+							{/each}
+						{/if}
+					</div>
 
-				<div class="p-4 border-t border-base-300">
-					<div class="max-w-4xl mx-auto">
-						<div class="flex flex-wrap gap-2 mb-3">
-							{#if destination}
+					<div class="p-4 border-t border-base-300">
+						<div class="max-w-4xl mx-auto">
+							<div class="flex flex-wrap gap-2 mb-3">
+								{#if destination}
+									<button
+										class="btn btn-sm btn-ghost"
+										on:click={() =>
+											sendPresetMessage(`What are the best restaurants in ${destination}?`)}
+										disabled={isStreaming || chatProviders.length === 0}
+									>
+										🍽️ Restaurants
+									</button>
+									<button
+										class="btn btn-sm btn-ghost"
+										on:click={() =>
+											sendPresetMessage(`What activities can I do in ${destination}?`)}
+										disabled={isStreaming || chatProviders.length === 0}
+									>
+										🎯 Activities
+									</button>
+								{/if}
+								{#if startDate && endDate}
+									<button
+										class="btn btn-sm btn-ghost"
+										on:click={() =>
+											sendPresetMessage(
+												`What should I pack for my trip from ${startDate} to ${endDate}?`
+											)}
+										disabled={isStreaming || chatProviders.length === 0}
+									>
+										🎒 Packing tips
+									</button>
+								{/if}
 								<button
 									class="btn btn-sm btn-ghost"
 									on:click={() =>
-										sendPresetMessage(`What are the best restaurants in ${destination}?`)}
+										sendPresetMessage('Can you help me plan a day-by-day itinerary for this trip?')}
 									disabled={isStreaming || chatProviders.length === 0}
 								>
-									🍽️ Restaurants
+									📅 Itinerary help
 								</button>
-								<button
-									class="btn btn-sm btn-ghost"
-									on:click={() => sendPresetMessage(`What activities can I do in ${destination}?`)}
-									disabled={isStreaming || chatProviders.length === 0}
-								>
-									🎯 Activities
-								</button>
-							{/if}
-							{#if startDate && endDate}
-								<button
-									class="btn btn-sm btn-ghost"
-									on:click={() =>
-										sendPresetMessage(
-											`What should I pack for my trip from ${startDate} to ${endDate}?`
-										)}
-									disabled={isStreaming || chatProviders.length === 0}
-								>
-									🎒 Packing tips
-								</button>
-							{/if}
+							</div>
+						</div>
+						<div class="flex gap-2 max-w-4xl mx-auto">
+							<textarea
+								class="textarea textarea-bordered flex-1 resize-none"
+								placeholder={$t('chat.input_placeholder')}
+								bind:value={inputMessage}
+								on:keydown={handleKeydown}
+								rows="1"
+								disabled={isStreaming}
+							></textarea>
 							<button
-								class="btn btn-sm btn-ghost"
-								on:click={() =>
-									sendPresetMessage('Can you help me plan a day-by-day itinerary for this trip?')}
-								disabled={isStreaming || chatProviders.length === 0}
+								class="btn btn-primary"
+								on:click={sendMessage}
+								disabled={isStreaming || !inputMessage.trim() || chatProviders.length === 0}
+								title={$t('chat.send')}
 							>
-								📅 Itinerary help
+								{#if isStreaming}
+									<span class="loading loading-spinner loading-sm"></span>
+								{:else}
+									<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+										<path d={mdiSend}></path>
+									</svg>
+								{/if}
 							</button>
 						</div>
 					</div>
-					<div class="flex gap-2 max-w-4xl mx-auto">
-						<textarea
-							class="textarea textarea-bordered flex-1 resize-none"
-							placeholder={$t('chat.input_placeholder')}
-							bind:value={inputMessage}
-							on:keydown={handleKeydown}
-							rows="1"
-							disabled={isStreaming}
-						></textarea>
-						<button
-							class="btn btn-primary"
-							on:click={sendMessage}
-							disabled={isStreaming || !inputMessage.trim() || chatProviders.length === 0}
-							title={$t('chat.send')}
-						>
-							{#if isStreaming}
-								<span class="loading loading-spinner loading-sm"></span>
-							{:else}
-								<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-									<path d={mdiSend}></path>
-								</svg>
-							{/if}
-						</button>
-					</div>
-				</div>
+				{/if}
 			</div>
 		</div>
 	</div>

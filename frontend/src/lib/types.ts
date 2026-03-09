@@ -573,6 +573,8 @@ export type ChatProviderCatalogEntry = {
 	needs_api_key: boolean | null;
 	default_model: string | null;
 	api_base: string | null;
+	instance_configured: boolean;
+	user_configured: boolean;
 };
 
 export type UserRecommendationPreferenceProfile = {

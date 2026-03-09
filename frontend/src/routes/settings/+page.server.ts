@@ -1,7 +1,7 @@
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from '../$types';
 const PUBLIC_SERVER_URL = process.env['PUBLIC_SERVER_URL'];
-import type { ImmichIntegration, User, UserRecommendationPreferenceProfile } from '$lib/types';
+import type { ImmichIntegration, User } from '$lib/types';
 import { fetchCSRFToken } from '$lib/index.server';
 const endpoint = PUBLIC_SERVER_URL || 'http://localhost:8000';
 
@@ -95,25 +95,11 @@ export const load: PageServerLoad = async (event) => {
 
 	let apiKeys: UserAPIKey[] = [];
 	let apiKeysConfigError: string | null = null;
-	let [apiKeysFetch, recommendationPreferencesFetch] = await Promise.all([
-		fetch(`${endpoint}/api/integrations/api-keys/`, {
-			headers: {
-				Cookie: `sessionid=${sessionId}`
-			}
-		}),
-		fetch(`${endpoint}/api/integrations/recommendation-preferences/`, {
-			headers: {
-				Cookie: `sessionid=${sessionId}`
-			}
-		})
-	]);
-
-	let recommendationProfile: UserRecommendationPreferenceProfile | null = null;
-	if (recommendationPreferencesFetch.ok) {
-		const recommendationProfiles =
-			(await recommendationPreferencesFetch.json()) as UserRecommendationPreferenceProfile[];
-		recommendationProfile = recommendationProfiles[0] ?? null;
-	}
+	let apiKeysFetch = await fetch(`${endpoint}/api/integrations/api-keys/`, {
+		headers: {
+			Cookie: `sessionid=${sessionId}`
+		}
+	});
 
 	if (apiKeysFetch.ok) {
 		apiKeys = (await apiKeysFetch.json()) as UserAPIKey[];
@@ -145,7 +131,6 @@ export const load: PageServerLoad = async (event) => {
 			stravaUserEnabled,
 			apiKeys,
 			apiKeysConfigError,
-			recommendationProfile,
 			wandererEnabled,
 			wandererExpired
 		}

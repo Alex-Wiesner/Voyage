@@ -28,16 +28,6 @@
 		usage_required: boolean;
 	};
 
-	type UserRecommendationPreferenceProfile = {
-		id: string;
-		cuisines: string | null;
-		interests: string[];
-		trip_style: string | null;
-		notes: string | null;
-		created_at: string;
-		updated_at: string;
-	};
-
 	let new_email: string = '';
 	let public_url: string = data.props.publicUrl;
 	let immichIntegration = data.props.immichIntegration;
@@ -60,13 +50,6 @@
 	let newApiKeyValue = '';
 	let isSavingApiKey = false;
 	let deletingApiKeyId: string | null = null;
-	let recommendationProfile: UserRecommendationPreferenceProfile | null = null;
-	let cuisinesValue = '';
-	let interestsValue = '';
-	let tripStyleValue = '';
-	let notesValue = '';
-	let isSavingPreferences = false;
-	let savePreferencesError = '';
 	let mcpToken: string | null = null;
 	let isLoadingMcpToken = false;
 	let activeSection: string = 'profile';
@@ -144,23 +127,12 @@
 		{ id: 'emails', icon: '📧', label: () => $t('settings.emails') },
 		{ id: 'integrations', icon: '🔗', label: () => $t('settings.integrations') },
 		{ id: 'ai_api_keys', icon: '🤖', label: () => $t('settings.ai_api_keys') },
-		{ id: 'travel_preferences', icon: '🧭', label: () => $t('settings.travel_preferences') },
 		{ id: 'import_export', icon: '📦', label: () => $t('settings.backup_restore') },
 		{ id: 'admin', icon: '⚙️', label: () => $t('settings.admin') },
 		{ id: 'advanced', icon: '🛠️', label: () => $t('settings.advanced') }
 	];
 
 	onMount(async () => {
-		recommendationProfile =
-			(data.props as { recommendationProfile?: UserRecommendationPreferenceProfile | null })
-				.recommendationProfile ?? null;
-		if (recommendationProfile) {
-			cuisinesValue = recommendationProfile.cuisines ?? '';
-			interestsValue = (recommendationProfile.interests || []).join(', ');
-			tripStyleValue = recommendationProfile.trip_style ?? '';
-			notesValue = recommendationProfile.notes ?? '';
-		}
-
 		void loadProviderCatalog();
 
 		if (browser) {
@@ -580,45 +552,6 @@
 			addToast('error', $t('settings.api_keys_generic_error'));
 		} finally {
 			deletingApiKeyId = null;
-		}
-	}
-
-	async function savePreferences(event: SubmitEvent) {
-		event.preventDefault();
-		savePreferencesError = '';
-		isSavingPreferences = true;
-
-		try {
-			const res = await fetch('/api/integrations/recommendation-preferences/', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					cuisines: cuisinesValue.trim() || null,
-					interests: interestsValue
-						.split(',')
-						.map((s) => s.trim())
-						.filter(Boolean),
-					trip_style: tripStyleValue.trim() || null,
-					notes: notesValue.trim() || null
-				})
-			});
-
-			if (!res.ok) {
-				savePreferencesError = $t('settings.preferences_save_error');
-				addToast('error', $t('settings.preferences_save_error'));
-				return;
-			}
-
-			recommendationProfile = (await res.json()) as UserRecommendationPreferenceProfile;
-			interestsValue = (recommendationProfile.interests || []).join(', ');
-			addToast('success', $t('settings.preferences_saved'));
-		} catch {
-			savePreferencesError = $t('settings.preferences_save_error');
-			addToast('error', $t('settings.preferences_save_error'));
-		} finally {
-			isSavingPreferences = false;
 		}
 	}
 
@@ -1752,87 +1685,6 @@
 									</button>
 								</form>
 							</div>
-						</div>
-					{/if}
-
-					<!-- Travel Preferences Section -->
-					{#if activeSection === 'travel_preferences'}
-						<div class="bg-base-100 rounded-2xl shadow-xl p-8">
-							<div class="flex items-center gap-4 mb-6">
-								<div class="p-3 bg-primary/10 rounded-xl">
-									<span class="text-2xl">🧭</span>
-								</div>
-								<div>
-									<h2 class="text-2xl font-bold">{$t('settings.travel_preferences')}</h2>
-									<p class="text-base-content/70">
-										{$t('settings.travel_preferences_desc')}
-									</p>
-								</div>
-							</div>
-
-							<form class="space-y-4" on:submit={savePreferences}>
-								<div class="form-control">
-									<label class="label" for="travel-cuisines">
-										<span class="label-text font-medium">{$t('settings.cuisines')}</span>
-									</label>
-									<textarea
-										id="travel-cuisines"
-										class="textarea textarea-bordered textarea-primary min-h-24"
-										placeholder={$t('settings.cuisines_placeholder')}
-										bind:value={cuisinesValue}
-									></textarea>
-								</div>
-
-								<div class="form-control">
-									<label class="label" for="travel-interests">
-										<span class="label-text font-medium">{$t('settings.interests')}</span>
-									</label>
-									<textarea
-										id="travel-interests"
-										class="textarea textarea-bordered textarea-primary min-h-24"
-										placeholder={$t('settings.interests_placeholder')}
-										bind:value={interestsValue}
-									></textarea>
-								</div>
-
-								<div class="form-control">
-									<label class="label" for="travel-style">
-										<span class="label-text font-medium">{$t('settings.trip_style')}</span>
-									</label>
-									<input
-										id="travel-style"
-										type="text"
-										class="input input-bordered input-primary"
-										placeholder={$t('settings.trip_style_placeholder')}
-										bind:value={tripStyleValue}
-									/>
-								</div>
-
-								<div class="form-control">
-									<label class="label" for="travel-notes">
-										<span class="label-text font-medium">{$t('settings.notes')}</span>
-									</label>
-									<textarea
-										id="travel-notes"
-										class="textarea textarea-bordered textarea-primary min-h-28"
-										placeholder={$t('settings.notes_placeholder')}
-										bind:value={notesValue}
-									></textarea>
-								</div>
-
-								{#if savePreferencesError}
-									<div class="alert alert-error">
-										<span>{savePreferencesError}</span>
-									</div>
-								{/if}
-
-								<button class="btn btn-primary" type="submit" disabled={isSavingPreferences}>
-									{#if isSavingPreferences}
-										<span class="loading loading-spinner loading-sm"></span>
-									{/if}
-									{$t('settings.update')}
-								</button>
-							</form>
 						</div>
 					{/if}
 

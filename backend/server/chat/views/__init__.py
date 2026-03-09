@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 
 from asgiref.sync import sync_to_async
 from adventures.models import Collection
@@ -18,6 +19,8 @@ from ..llm_client import (
 )
 from ..models import ChatConversation, ChatMessage
 from ..serializers import ChatConversationSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class ChatViewSet(viewsets.ModelViewSet):
@@ -108,6 +111,15 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def send_message(self, request, pk=None):
+        # Auto-learn preferences from user's travel history
+        from integrations.utils.auto_profile import update_auto_preference_profile
+
+        try:
+            update_auto_preference_profile(request.user)
+        except Exception as exc:
+            logger.warning("Auto-profile update failed: %s", exc)
+            # Continue anyway - not critical
+
         conversation = self.get_object()
         user_content = (request.data.get("message") or "").strip()
         if not user_content:
@@ -322,6 +334,93 @@ class ChatProviderCatalogViewSet(viewsets.ViewSet):
 
     def list(self, request):
         return Response(get_provider_catalog(user=request.user))
+
+    @action(detail=True, methods=["get"])
+    def models(self, request, pk=None):
+        """Fetch available models from a provider's API."""
+        from chat.llm_client import get_llm_api_key
+
+        provider = (pk or "").lower()
+
+        api_key = get_llm_api_key(request.user, provider)
+        if not api_key:
+            return Response(
+                {"error": "No API key configured for this provider"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            if provider == "openai":
+                import openai
+
+                client = openai.OpenAI(api_key=api_key)
+                models = client.models.list()
+                chat_models = [
+                    model.id
+                    for model in models
+                    if any(prefix in model.id for prefix in ["gpt-", "o1-", "chatgpt"])
+                ]
+                return Response({"models": sorted(set(chat_models), reverse=True)})
+
+            if provider in ["anthropic", "claude"]:
+                return Response(
+                    {
+                        "models": [
+                            "claude-sonnet-4-20250514",
+                            "claude-opus-4-20250514",
+                            "claude-3-5-sonnet-20241022",
+                            "claude-3-5-haiku-20241022",
+                            "claude-3-haiku-20240307",
+                        ]
+                    }
+                )
+
+            if provider in ["gemini", "google"]:
+                return Response(
+                    {
+                        "models": [
+                            "gemini-2.0-flash",
+                            "gemini-1.5-pro",
+                            "gemini-1.5-flash",
+                            "gemini-1.5-flash-8b",
+                        ]
+                    }
+                )
+
+            if provider in ["groq"]:
+                return Response(
+                    {
+                        "models": [
+                            "llama-3.3-70b-versatile",
+                            "llama-3.1-70b-versatile",
+                            "llama-3.1-8b-instant",
+                            "mixtral-8x7b-32768",
+                        ]
+                    }
+                )
+
+            if provider in ["ollama"]:
+                import requests
+
+                try:
+                    response = requests.get(
+                        "http://localhost:11434/api/tags", timeout=5
+                    )
+                    if response.ok:
+                        data = response.json()
+                        models = [item["name"] for item in data.get("models", [])]
+                        return Response({"models": models})
+                except Exception:
+                    pass
+                return Response({"models": []})
+
+            return Response({"models": []})
+        except Exception as exc:
+            logger.error("Failed to fetch models for %s: %s", provider, exc)
+            return Response(
+                {"error": f"Failed to fetch models: {str(exc)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 from .capabilities import CapabilitiesView

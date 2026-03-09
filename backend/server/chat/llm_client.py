@@ -335,25 +335,22 @@ Be conversational, helpful, and enthusiastic about travel. Keep responses concis
     else:
         try:
             profile = UserRecommendationPreferenceProfile.objects.get(user=user)
-            preference_lines = []
 
-            if profile.cuisines:
-                preference_lines.append(
-                    f"🍽️ **Cuisine Preferences**: {profile.cuisines}"
-                )
-            if profile.interests:
-                preference_lines.append(
-                    f"🎯 **Interests**: {_format_interests(profile.interests)}"
-                )
-            if profile.trip_style:
-                preference_lines.append(f"✈️ **Travel Style**: {profile.trip_style}")
-            if profile.notes:
-                preference_lines.append(f"📝 **Additional Notes**: {profile.notes}")
+            if profile.interests or profile.trip_style or profile.notes:
+                base_prompt += "\n\n## Traveler Preferences\n"
+                base_prompt += "*(Automatically inferred from travel history)*\n\n"
 
-            if preference_lines:
-                base_prompt += "\n\n## Traveler Preferences\n" + "\n".join(
-                    preference_lines
-                )
+                if profile.interests:
+                    interests_str = (
+                        ", ".join(profile.interests)
+                        if isinstance(profile.interests, list)
+                        else str(profile.interests)
+                    )
+                    base_prompt += f"🎯 **Interests**: {interests_str}\n"
+                if profile.trip_style:
+                    base_prompt += f"✈️ **Travel Style**: {profile.trip_style}\n"
+                if profile.notes:
+                    base_prompt += f"📍 **Patterns**: {profile.notes}\n"
         except UserRecommendationPreferenceProfile.DoesNotExist:
             pass
 
