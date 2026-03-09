@@ -587,6 +587,14 @@ export type UserRecommendationPreferenceProfile = {
 	updated_at: string;
 };
 
+export type UserAISettings = {
+	id: string;
+	preferred_provider: string | null;
+	preferred_model: string | null;
+	created_at: string;
+	updated_at: string;
+};
+
 export type CollectionItineraryDay = {
 	id: string;
 	collection: string; // UUID of the collection

@@ -1,7 +1,7 @@
 import { fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from '../$types';
 const PUBLIC_SERVER_URL = process.env['PUBLIC_SERVER_URL'];
-import type { ImmichIntegration, User } from '$lib/types';
+import type { ImmichIntegration, User, UserAISettings } from '$lib/types';
 import { fetchCSRFToken } from '$lib/index.server';
 const endpoint = PUBLIC_SERVER_URL || 'http://localhost:8000';
 
@@ -95,6 +95,7 @@ export const load: PageServerLoad = async (event) => {
 
 	let apiKeys: UserAPIKey[] = [];
 	let apiKeysConfigError: string | null = null;
+	let aiSettings: UserAISettings | null = null;
 	let apiKeysFetch = await fetch(`${endpoint}/api/integrations/api-keys/`, {
 		headers: {
 			Cookie: `sessionid=${sessionId}`
@@ -106,6 +107,17 @@ export const load: PageServerLoad = async (event) => {
 	} else if (apiKeysFetch.status === 503) {
 		const errorBody = (await apiKeysFetch.json()) as { detail?: string };
 		apiKeysConfigError = errorBody.detail ?? 'API key storage is currently unavailable.';
+	}
+
+	let aiSettingsFetch = await fetch(`${endpoint}/api/integrations/ai-settings/`, {
+		headers: {
+			Cookie: `sessionid=${sessionId}`
+		}
+	});
+
+	if (aiSettingsFetch.ok) {
+		const aiSettingsResponse = (await aiSettingsFetch.json()) as UserAISettings[];
+		aiSettings = aiSettingsResponse[0] ?? null;
 	}
 
 	let publicUrlFetch = await fetch(`${endpoint}/public-url/`);
@@ -131,6 +143,7 @@ export const load: PageServerLoad = async (event) => {
 			stravaUserEnabled,
 			apiKeys,
 			apiKeysConfigError,
+			aiSettings,
 			wandererEnabled,
 			wandererExpired
 		}

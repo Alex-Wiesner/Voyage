@@ -14,6 +14,7 @@
 		name: string;
 		description?: string;
 		why_fits?: string;
+		category?: string;
 		location?: string;
 		rating?: number | string | null;
 		price_level?: string | null;
@@ -118,6 +119,94 @@
 		return nextFilters;
 	}
 
+	function asRecord(value: unknown): Record<string, unknown> | null {
+		if (!value || typeof value !== 'object' || Array.isArray(value)) {
+			return null;
+		}
+		return value as Record<string, unknown>;
+	}
+
+	function normalizeText(value: unknown): string {
+		if (typeof value !== 'string') return '';
+		return value.trim();
+	}
+
+	function normalizeRating(value: unknown): number | null {
+		if (typeof value === 'number' && Number.isFinite(value)) {
+			return value;
+		}
+
+		if (typeof value === 'string') {
+			const match = value.match(/\d+(\.\d+)?/);
+			if (!match) return null;
+			const parsed = Number(match[0]);
+			return Number.isFinite(parsed) ? parsed : null;
+		}
+
+		return null;
+	}
+
+	function normalizeSuggestionItem(value: unknown): SuggestionItem | null {
+		const item = asRecord(value);
+		if (!item) return null;
+
+		const name =
+			normalizeText(item.name) ||
+			normalizeText(item.title) ||
+			normalizeText(item.place_name) ||
+			normalizeText(item.venue);
+		const description =
+			normalizeText(item.description) || normalizeText(item.summary) || normalizeText(item.details);
+		const whyFits =
+			normalizeText(item.why_fits) || normalizeText(item.whyFits) || normalizeText(item.reason);
+		const location =
+			normalizeText(item.location) ||
+			normalizeText(item.address) ||
+			normalizeText(item.neighborhood);
+		const category = normalizeText(item.category);
+		const priceLevel =
+			normalizeText(item.price_level) ||
+			normalizeText(item.priceLevel) ||
+			normalizeText(item.price);
+		const rating = normalizeRating(item.rating ?? item.score);
+
+		const finalName = name || location;
+		if (!finalName) return null;
+
+		return {
+			name: finalName,
+			description: description || undefined,
+			why_fits: whyFits || undefined,
+			category: category || undefined,
+			location: location || undefined,
+			rating,
+			price_level: priceLevel || null
+		};
+	}
+
+	function buildLocationPayload(suggestion: SuggestionItem) {
+		const name =
+			normalizeText(suggestion.name) || normalizeText(suggestion.location) || 'Suggestion';
+		const locationText =
+			normalizeText(suggestion.location) ||
+			getCollectionLocation() ||
+			normalizeText(suggestion.name);
+		const description =
+			normalizeText(suggestion.description) ||
+			normalizeText(suggestion.why_fits) ||
+			(suggestion.category ? `${suggestion.category} suggestion` : '');
+		const rating = normalizeRating(suggestion.rating);
+
+		return {
+			name,
+			description,
+			location: locationText || name,
+			rating,
+			collections: [collection.id],
+			is_public: false
+		};
+	}
+
 	async function fetchSuggestions() {
 		if (!selectedCategory) return;
 
@@ -144,7 +233,11 @@
 			}
 
 			const data = await response.json();
-			suggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
+			suggestions = Array.isArray(data?.suggestions)
+				? data.suggestions
+						.map((item: unknown) => normalizeSuggestionItem(item))
+						.filter((item: SuggestionItem | null): item is SuggestionItem => item !== null)
+				: [];
 		} catch (_err) {
 			error = $t('suggestions.error');
 			suggestions = [];
@@ -180,17 +273,12 @@
 		error = '';
 
 		try {
+			const payload = buildLocationPayload(suggestion);
 			const createLocationResponse = await fetch('/api/locations/', {
 				method: 'POST',
 				credentials: 'include',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					name: suggestion.name,
-					description: suggestion.description || suggestion.why_fits || '',
-					location: suggestion.location || getCollectionLocation() || suggestion.name,
-					collections: [collection.id],
-					is_public: false
-				})
+				body: JSON.stringify(payload)
 			});
 
 			if (!createLocationResponse.ok) {

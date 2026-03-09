@@ -165,6 +165,18 @@ def _normalize_provider_id(provider_id):
     return lowered
 
 
+def normalize_gateway_model(provider_id, model):
+    normalized_provider = _normalize_provider_id(provider_id)
+    normalized_model = str(model or "").strip()
+    if not normalized_model:
+        return None
+
+    if normalized_provider == "opencode_zen" and "/" not in normalized_model:
+        return f"openai/{normalized_model}"
+
+    return normalized_model
+
+
 def _default_provider_label(provider_id):
     return provider_id.replace("_", " ").title()
 
@@ -405,6 +417,7 @@ async def stream_chat_completion(user, messages, provider, tools=None, model=Non
         )
         or provider_config["default_model"]
     )
+    resolved_model = normalize_gateway_model(normalized_provider, resolved_model)
 
     if tools and not litellm.supports_function_calling(model=resolved_model):
         logger.warning(

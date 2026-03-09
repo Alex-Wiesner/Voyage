@@ -1,0 +1,83 @@
+name: voyage
+version: 1
+categories:
+  - path: system.md
+    description: One-paragraph project overview — purpose, stack, status
+    group: knowledge
+
+  - path: knowledge/overview.md
+    description: Architecture overview — API proxy, AI chat, services, auth, file locations
+    group: knowledge
+
+  - path: knowledge/tech-stack.md
+    description: Stack details, dev commands, environment config, env vars, known issues
+    group: knowledge
+
+  - path: knowledge/conventions.md
+    description: Coding conventions — frontend/backend patterns, workflow rules
+    group: knowledge
+
+  - path: knowledge/patterns/chat-and-llm.md
+    description: Chat & LLM patterns — model override, error mapping, agent tools, OpenCode Zen, context derivation
+    group: knowledge
+
+  - path: knowledge/domain/collections-and-sharing.md
+    description: Collections domain — sharing architecture, itinerary planner, user preferences
+    group: knowledge
+
+  - path: knowledge/domain/ai-configuration.md
+    description: AI configuration domain — WS1 infrastructure, provider catalog, frontend gaps
+    group: knowledge
+
+  - path: decisions.md
+    description: Architecture Decision Records — fork rationale, tooling choices, review/test verdicts, critic gates
+    group: decisions
+
+  - path: plans/ai-travel-agent-collections-integration.md
+    description: Plan for AI travel chat embedding in Collections + provider catalog (original integration)
+    group: plans
+
+  - path: plans/opencode-zen-connection-error.md
+    description: Plan for OpenCode Zen connection fix — model default change, error surfacing, model selection UI
+    group: plans
+
+  - path: plans/ai-travel-agent-redesign.md
+    description: Plan for AI travel agent redesign — WS1-WS6 workstreams (config, preferences, suggestions, chat UI, web search, extensibility)
+    group: plans
+
+  - path: plans/travel-agent-context-and-models.md
+    description: "Plan for follow-up fixes: F1 model dropdown expansion, F2 multi-stop context, F3 itinerary-centric prompts + .results key fix (COMPLETE)"
+    group: plans
+
+  - path: plans/pre-release-and-memory-migration.md
+    description: Plan for pre-release policy addition + .memory structure migration
+    group: plans
+
+  - path: research/litellm-zen-provider-catalog.md
+    description: Research on LiteLLM provider catalog and OpenCode Zen API compatibility
+    group: research
+
+  - path: research/opencode-zen-connection-debug.md
+    description: Debug findings for OpenCode Zen connection errors and model routing
+    group: research
+
+  - path: research/auto-learn-preference-signals.md
+    description: Research on auto-learning user travel preference signals from history data
+    group: research
+
+  - path: research/provider-strategy.md
+    description: "Research: multi-provider strategy — LiteLLM hardening vs replacement, retry/fallback patterns"
+    group: research
+
+  - path: sessions/continuity.md
+    description: Rolling session continuity notes — last session context, active work
+    group: sessions
+
+  - path: plans/chat-provider-fixes.md
+    description: "Chat provider fixes plan (COMPLETE) — chat-loop-hardening, default-ai-settings, suggestion-add-flow workstreams with full review/test records"
+    group: plans
+
+  # Deprecated (content migrated)
+  - path: knowledge.md
+    description: "DEPRECATED — migrated to knowledge/ nested structure. See knowledge/ files."
+    group: knowledge

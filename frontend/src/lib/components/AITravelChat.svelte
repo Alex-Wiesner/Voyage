@@ -36,6 +36,11 @@
 		user_configured: boolean;
 	};
 
+	type UserAISettingsResponse = {
+		preferred_provider: string | null;
+		preferred_model: string | null;
+	};
+
 	export let embedded = false;
 	export let collectionId: string | undefined = undefined;
 	export let collectionName: string | undefined = undefined;
@@ -58,6 +63,10 @@
 	let chatProviders: ChatProviderCatalogConfiguredEntry[] = [];
 	let providerError = '';
 	let selectedProviderDefaultModel = '';
+	let savedDefaultProvider = '';
+	let savedDefaultModel = '';
+	let initialDefaultsApplied = false;
+	let loadedModelsForProvider = '';
 	let showDateSelector = false;
 	let selectedPlaceToAdd: PlaceResult | null = null;
 	let selectedDate = '';
@@ -68,12 +77,64 @@
 	}>();
 
 	const MODEL_PREFS_STORAGE_KEY = 'voyage_chat_model_prefs';
-	let initializedModelProvider = '';
 	$: promptTripContext = collectionName || destination || '';
 
 	onMount(async () => {
-		await Promise.all([loadConversations(), loadProviderCatalog()]);
+		await Promise.all([loadConversations(), loadProviderCatalog(), loadUserAISettings()]);
+		await applyInitialDefaults();
 	});
+
+	async function loadUserAISettings(): Promise<void> {
+		try {
+			const res = await fetch('/api/integrations/ai-settings/', {
+				credentials: 'include'
+			});
+			if (!res.ok) {
+				return;
+			}
+
+			const settings = (await res.json()) as UserAISettingsResponse[];
+			const first = settings[0];
+			if (!first) {
+				return;
+			}
+
+			savedDefaultProvider = (first.preferred_provider || '').trim().toLowerCase();
+			savedDefaultModel = (first.preferred_model || '').trim();
+		} catch (e) {
+			console.error('Failed to load AI settings:', e);
+		}
+	}
+
+	async function applyInitialDefaults(): Promise<void> {
+		if (initialDefaultsApplied || chatProviders.length === 0) {
+			return;
+		}
+
+		if (
+			savedDefaultProvider &&
+			chatProviders.some((provider) => provider.id === savedDefaultProvider)
+		) {
+			selectedProvider = savedDefaultProvider;
+		} else {
+			const userConfigured = chatProviders.find((provider) => provider.user_configured);
+			selectedProvider = (userConfigured || chatProviders[0]).id;
+		}
+
+		await loadModelsForProvider(selectedProvider);
+
+		if (savedDefaultModel && selectedProvider === savedDefaultProvider) {
+			selectedModel = availableModels.includes(savedDefaultModel)
+				? savedDefaultModel
+				: selectedProviderDefaultModel || availableModels[0] || '';
+		} else {
+			selectedModel = selectedProviderDefaultModel || availableModels[0] || '';
+		}
+
+		saveModelPref(selectedProvider, selectedModel);
+		loadedModelsForProvider = selectedProvider;
+		initialDefaultsApplied = true;
+	}
 
 	async function loadProviderCatalog(): Promise<void> {
 		try {
@@ -98,9 +159,8 @@
 
 			if (usable.length > 0) {
 				providerError = '';
-				if (!selectedProvider || !usable.some((provider) => provider.id === selectedProvider)) {
-					const userConfigured = usable.find((provider) => provider.user_configured);
-					selectedProvider = (userConfigured || usable[0]).id;
+				if (selectedProvider && !usable.some((provider) => provider.id === selectedProvider)) {
+					selectedProvider = '';
 				}
 			} else {
 				selectedProvider = '';
@@ -113,24 +173,21 @@
 		}
 	}
 
-	async function loadModelsForProvider() {
-		if (!selectedProvider) {
+	async function loadModelsForProvider(providerId: string) {
+		if (!providerId) {
 			availableModels = [];
 			return;
 		}
 
 		modelsLoading = true;
 		try {
-			const res = await fetch(`/api/chat/providers/${selectedProvider}/models/`, {
+			const res = await fetch(`/api/chat/providers/${providerId}/models/`, {
 				credentials: 'include'
 			});
 			const data = await res.json();
 
 			if (data.models && data.models.length > 0) {
 				availableModels = data.models;
-				if (!selectedModel || !availableModels.includes(selectedModel)) {
-					selectedModel = availableModels[0];
-				}
 			} else {
 				availableModels = [];
 			}
@@ -139,25 +196,6 @@
 			availableModels = [];
 		} finally {
 			modelsLoading = false;
-		}
-	}
-
-	function loadModelPref(provider: string): string {
-		if (typeof window === 'undefined') {
-			return '';
-		}
-
-		try {
-			const raw = window.localStorage.getItem(MODEL_PREFS_STORAGE_KEY);
-			if (!raw) {
-				return '';
-			}
-
-			const prefs = JSON.parse(raw) as Record<string, string>;
-			const value = prefs[provider];
-			return typeof value === 'string' ? value : '';
-		} catch {
-			return '';
 		}
 	}
 
@@ -176,20 +214,26 @@
 		}
 	}
 
-	$: if (selectedProvider && initializedModelProvider !== selectedProvider) {
-		selectedModel = loadModelPref(selectedProvider) || selectedProviderDefaultModel || '';
-		initializedModelProvider = selectedProvider;
-	}
-
-	$: if (selectedProvider && initializedModelProvider === selectedProvider) {
-		saveModelPref(selectedProvider, selectedModel);
-	}
-
 	$: selectedProviderDefaultModel =
 		chatProviders.find((provider) => provider.id === selectedProvider)?.default_model ?? '';
 
-	$: if (selectedProvider) {
-		void loadModelsForProvider();
+	$: if (
+		selectedProvider &&
+		initialDefaultsApplied &&
+		loadedModelsForProvider !== selectedProvider
+	) {
+		loadedModelsForProvider = selectedProvider;
+		void (async () => {
+			await loadModelsForProvider(selectedProvider);
+			if (!selectedModel || !availableModels.includes(selectedModel)) {
+				selectedModel = selectedProviderDefaultModel || availableModels[0] || '';
+			}
+			saveModelPref(selectedProvider, selectedModel);
+		})();
+	}
+
+	$: if (selectedProvider && initialDefaultsApplied) {
+		saveModelPref(selectedProvider, selectedModel);
 	}
 
 	async function loadConversations() {

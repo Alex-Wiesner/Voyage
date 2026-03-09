@@ -26,7 +26,11 @@ The term "Location" is now used instead of "Adventure" - the usage remains the s
 
 The AI travel chat is embedded in the **Collections → Recommendations** view. Select a collection, switch to the Recommendations tab, and use the chat to brainstorm destinations, ask for travel advice, or get location suggestions. The chat supports multiple LLM providers — configure your API key in **Settings → API Keys** and pick a provider from the dropdown in the chat interface. The provider list is loaded dynamically from the backend, so any provider supported by LiteLLM (plus OpenCode Zen) is available.
 
-You can also override the default model for any provider by typing a model name in the **Model** input next to the provider selector (e.g. `openai/gpt-5-nano`). Your model choice is saved per-provider in the browser. If the model field is left empty, the provider's default model is used. Provider errors (authentication, model not found, rate limits) are displayed as clear, actionable messages in the chat.
+You can set a **default AI provider and model** in **Settings** (under "Default AI Settings"). These saved defaults are used automatically when you open a new chat or request day suggestions. The defaults are stored in the database and apply across all your devices — they take priority over any previous per-browser model selections. You can still override the provider and model in the chat interface for individual conversations.
+
+Day suggestions (the AI-generated place recommendations for specific itinerary days) also respect your saved default provider and model. If no defaults are saved, the instance-level provider configured by the server admin is used.
+
+Provider errors (authentication, model not found, rate limits, invalid tool calls) are displayed as clear, actionable messages in the chat. If the AI attempts to use a tool incorrectly (e.g., missing required parameters), the error is surfaced once and the conversation stops cleanly rather than looping.
 
 #### Collections
 

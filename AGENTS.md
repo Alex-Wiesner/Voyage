@@ -13,7 +13,7 @@ Voyage is **pre-release** — not yet in production use. During pre-release:
 
 ## Architecture Overview
 - **API proxy pattern**: Frontend never calls Django directly. All API calls go through `frontend/src/routes/api/[...path]/+server.ts`, which proxies to `http://server:8000`, handles cookies, and injects CSRF behavior.
-- **AI chat**: Embedded in Collections → Recommendations via `AITravelChat.svelte` component. No standalone `/chat` route. Provider list is dynamic from backend `GET /api/chat/providers/` (sourced from LiteLLM runtime + custom entries like `opencode_zen`). Chat conversations use SSE streaming via `/api/chat/conversations/`. Chat composer supports per-provider model override (persisted in browser `localStorage`). LiteLLM errors are mapped to sanitized user-safe messages via `_safe_error_payload()` (never exposes raw exception text).
+- **AI chat**: Embedded in Collections → Recommendations via `AITravelChat.svelte` component. No standalone `/chat` route. Provider list is dynamic from backend `GET /api/chat/providers/` (sourced from LiteLLM runtime + custom entries like `opencode_zen`). Chat conversations use SSE streaming via `/api/chat/conversations/`. Default AI provider/model saved via `UserAISettings` in DB (authoritative over browser localStorage). LiteLLM errors are mapped to sanitized user-safe messages via `_safe_error_payload()` (never exposes raw exception text). Invalid tool calls (missing required args) are detected and short-circuited with a user-visible error — not replayed into history.
 - **Service ports**:
   - `web` → `:8015`
   - `server` → `:8016`
@@ -69,6 +69,7 @@ Run in this order:
 - Chat model override: dropdown selector fed by `GET /api/chat/providers/{provider}/models/`; persisted in `localStorage` key `voyage_chat_model_prefs`; backend accepts optional `model` param in `send_message`
 - Chat context: collection chats inject multi-stop itinerary context; system prompt guides `get_trip_details`-first reasoning
 - Chat error surfacing: `_safe_error_payload()` maps LiteLLM exceptions to sanitized user-safe categories (never forwards raw `exc.message`)
+- Invalid tool calls (missing required args) are detected and short-circuited with a user-visible error — not replayed into history
 
 ## Conventions
 - Do **not** attempt to fix known test/configuration issues as part of feature work.

@@ -47,6 +47,11 @@
 	let apiKeysConfigError: string | null = data.props.apiKeysConfigError ?? null;
 	let newApiKeyProvider = 'anthropic';
 	let providerCatalog: ChatProviderCatalogEntry[] = [];
+	let defaultAiProvider = (data.props.aiSettings?.preferred_provider ?? '').trim().toLowerCase();
+	let defaultAiModel = (data.props.aiSettings?.preferred_model ?? '').trim();
+	let defaultAiModels: string[] = [];
+	let defaultAiModelsLoading = false;
+	let isSavingDefaultAiSettings = false;
 	let newApiKeyValue = '';
 	let isSavingApiKey = false;
 	let deletingApiKeyId: string | null = null;
@@ -67,6 +72,104 @@
 
 		if (!providerCatalog.some((provider) => provider.id === newApiKeyProvider)) {
 			newApiKeyProvider = providerCatalog[0].id;
+		}
+	}
+
+	function getConfiguredChatProviders() {
+		return providerCatalog.filter(
+			(provider) =>
+				provider.available_for_chat && (provider.user_configured || provider.instance_configured)
+		);
+	}
+
+	async function loadDefaultAiModels(providerId: string) {
+		if (!providerId) {
+			defaultAiModels = [];
+			return;
+		}
+
+		defaultAiModelsLoading = true;
+		try {
+			const res = await fetch(`/api/chat/providers/${providerId}/models/`);
+			if (!res.ok) {
+				defaultAiModels = [];
+				return;
+			}
+
+			const payload = await res.json();
+			defaultAiModels = Array.isArray(payload.models) ? (payload.models as string[]) : [];
+		} catch {
+			defaultAiModels = [];
+		} finally {
+			defaultAiModelsLoading = false;
+		}
+	}
+
+	async function initializeDefaultAiSettings() {
+		const configuredProviders = getConfiguredChatProviders();
+		if (!configuredProviders.length) {
+			defaultAiProvider = '';
+			defaultAiModel = '';
+			defaultAiModels = [];
+			return;
+		}
+
+		if (
+			!defaultAiProvider ||
+			!configuredProviders.some((provider) => provider.id === defaultAiProvider)
+		) {
+			defaultAiProvider = configuredProviders[0].id;
+			defaultAiModel = '';
+		}
+
+		await loadDefaultAiModels(defaultAiProvider);
+		if (defaultAiModel && !defaultAiModels.includes(defaultAiModel)) {
+			defaultAiModel = '';
+		}
+	}
+
+	async function onDefaultAiProviderChange() {
+		defaultAiModel = '';
+		await loadDefaultAiModels(defaultAiProvider);
+	}
+
+	async function saveDefaultAiSettings(event: SubmitEvent) {
+		event.preventDefault();
+		if (!defaultAiProvider) {
+			addToast('error', $t('settings.default_ai_provider_required'));
+			return;
+		}
+
+		isSavingDefaultAiSettings = true;
+		try {
+			const res = await fetch('/api/integrations/ai-settings/', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					preferred_provider: defaultAiProvider,
+					preferred_model: defaultAiModel || null
+				})
+			});
+
+			if (!res.ok) {
+				addToast('error', $t('settings.default_ai_settings_error'));
+				return;
+			}
+
+			const saved = await res.json();
+			defaultAiProvider = (saved.preferred_provider ?? '').trim().toLowerCase();
+			defaultAiModel = (saved.preferred_model ?? '').trim();
+			await loadDefaultAiModels(defaultAiProvider);
+			if (defaultAiModel && !defaultAiModels.includes(defaultAiModel)) {
+				defaultAiModel = '';
+			}
+			addToast('success', $t('settings.default_ai_settings_saved'));
+		} catch {
+			addToast('error', $t('settings.default_ai_settings_error'));
+		} finally {
+			isSavingDefaultAiSettings = false;
 		}
 	}
 
@@ -133,7 +236,8 @@
 	];
 
 	onMount(async () => {
-		void loadProviderCatalog();
+		await loadProviderCatalog();
+		await initializeDefaultAiSettings();
 
 		if (browser) {
 			const queryParams = new URLSearchParams($page.url.search);
@@ -1568,6 +1672,71 @@
 										>
 									</p>
 								</div>
+							</div>
+
+							<div class="p-6 bg-base-200 rounded-xl mb-6">
+								<h3 class="text-lg font-semibold mb-2">
+									{$t('settings.default_ai_settings_title')}
+								</h3>
+								<p class="text-sm text-base-content/70 mb-4">
+									{$t('settings.default_ai_settings_desc')}
+								</p>
+
+								{#if getConfiguredChatProviders().length === 0}
+									<div class="alert alert-warning">
+										<span>{$t('settings.default_ai_no_providers')}</span>
+									</div>
+								{:else}
+									<form class="space-y-4" on:submit={saveDefaultAiSettings}>
+										<div class="form-control">
+											<label class="label" for="default-ai-provider">
+												<span class="label-text font-medium">{$t('settings.provider')}</span>
+											</label>
+											<select
+												id="default-ai-provider"
+												class="select select-bordered select-primary w-full"
+												bind:value={defaultAiProvider}
+												on:change={onDefaultAiProviderChange}
+											>
+												{#each getConfiguredChatProviders() as provider}
+													<option value={provider.id}>{provider.label}</option>
+												{/each}
+											</select>
+										</div>
+
+										<div class="form-control">
+											<label class="label" for="default-ai-model">
+												<span class="label-text font-medium">{$t('chat.model_label')}</span>
+											</label>
+											<select
+												id="default-ai-model"
+												class="select select-bordered select-primary w-full"
+												bind:value={defaultAiModel}
+												disabled={defaultAiModelsLoading}
+											>
+												<option value="">{$t('chat.model_placeholder')}</option>
+												{#if defaultAiModelsLoading}
+													<option value="" disabled>Loading...</option>
+												{:else}
+													{#each defaultAiModels as model}
+														<option value={model}>{model}</option>
+													{/each}
+												{/if}
+											</select>
+										</div>
+
+										<button
+											class="btn btn-primary"
+											type="submit"
+											disabled={isSavingDefaultAiSettings}
+										>
+											{#if isSavingDefaultAiSettings}
+												<span class="loading loading-spinner loading-sm"></span>
+											{/if}
+											{$t('settings.default_ai_save')}
+										</button>
+									</form>
+								{/if}
 							</div>
 
 							<div class="p-6 bg-base-200 rounded-xl mb-6">

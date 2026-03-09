@@ -98,7 +98,11 @@ def _parse_address(tags):
 
 @agent_tool(
     name="search_places",
-    description="Search for places of interest near a location. Returns tourist attractions, restaurants, hotels, etc.",
+    description=(
+        "Search for places of interest near a location. "
+        "Required: provide a non-empty 'location' string (city, neighborhood, or address). "
+        "Returns tourist attractions, restaurants, hotels, etc."
+    ),
     parameters={
         "location": {
             "type": "string",
@@ -231,7 +235,11 @@ def list_trips(user):
 
 @agent_tool(
     name="web_search",
-    description="Search the web for current information about destinations, events, prices, weather, or any real-time travel information. Use this when you need up-to-date information that may not be in your training data.",
+    description=(
+        "Search the web for current travel information. "
+        "Required: provide a non-empty 'query' string describing exactly what to look up. "
+        "Use when you need up-to-date info that may not be in training data."
+    ),
     parameters={
         "query": {
             "type": "string",
