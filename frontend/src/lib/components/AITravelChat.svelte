@@ -348,7 +348,9 @@
 		return [...next, toolResult];
 	}
 
-	function uniqueToolResultsByCallId(toolResults: ToolResultEntry[] | undefined): ToolResultEntry[] {
+	function uniqueToolResultsByCallId(
+		toolResults: ToolResultEntry[] | undefined
+	): ToolResultEntry[] {
 		if (!toolResults) {
 			return [];
 		}
@@ -366,6 +368,24 @@
 		}
 
 		return unique;
+	}
+
+	// Context-loading tools that should render at most once per message, even if
+	// the retry loop caused the LLM to call them multiple times.
+	const CONTEXT_ONLY_TOOLS = new Set(['get_trip_details', 'get_weather']);
+
+	function deduplicateContextTools(toolResults: ToolResultEntry[]): ToolResultEntry[] {
+		const seenContextTool = new Set<string>();
+		return toolResults.filter((result) => {
+			const name = result.name;
+			if (name && CONTEXT_ONLY_TOOLS.has(name)) {
+				if (seenContextTool.has(name)) {
+					return false;
+				}
+				seenContextTool.add(name);
+			}
+			return true;
+		});
 	}
 
 	function rebuildConversationMessages(rawMessages: ChatMessage[]): ChatMessage[] {
@@ -936,7 +956,7 @@
 											<div class="whitespace-pre-wrap">{msg.content}</div>
 											{#if msg.role === 'assistant' && msg.tool_results}
 												<div class="mt-2 space-y-2">
-													{#each uniqueToolResultsByCallId(msg.tool_results) as result}
+													{#each deduplicateContextTools(uniqueToolResultsByCallId(msg.tool_results)) as result}
 														{#if hasPlaceResults(result)}
 															<div class="grid gap-2">
 																{#each getPlaceResults(result) as place}

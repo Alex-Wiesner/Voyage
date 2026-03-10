@@ -196,6 +196,10 @@ def search_places(
             "category": category,
             "results": results,
         }
+    except requests.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 429:
+            return {"error": f"Places API request failed: {exc}", "retryable": False}
+        return {"error": f"Places API request failed: {exc}"}
     except requests.RequestException as exc:
         return {"error": f"Places API request failed: {exc}"}
     except (TypeError, ValueError) as exc:

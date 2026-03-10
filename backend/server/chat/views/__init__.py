@@ -248,6 +248,34 @@ class ChatViewSet(viewsets.ModelViewSet):
             result,
         ) or cls._is_search_places_geocode_error(tool_name, result)
 
+    @classmethod
+    def _is_get_weather_missing_latlong_error(cls, tool_name, result):
+        """True when get_weather was called without latitude/longitude."""
+        if tool_name != "get_weather" or not cls._is_required_param_tool_error(result):
+            return False
+
+        error_text = (result or {}).get("error") if isinstance(result, dict) else ""
+        if not isinstance(error_text, str):
+            return False
+
+        normalized_error = error_text.strip().lower()
+        return "latitude" in normalized_error or "longitude" in normalized_error
+
+    @staticmethod
+    def _extract_collection_coordinates(collection):
+        """Return (lat, lon) from the first geocoded location in the collection, or None."""
+        if collection is None:
+            return None
+        for location in collection.locations.all():
+            lat = getattr(location, "latitude", None)
+            lon = getattr(location, "longitude", None)
+            if lat is not None and lon is not None:
+                try:
+                    return float(lat), float(lon)
+                except (TypeError, ValueError):
+                    continue
+        return None
+
     @staticmethod
     def _build_search_places_location_clarification_message():
         return (
@@ -701,6 +729,54 @@ class ChatViewSet(viewsets.ModelViewSet):
                             ):
                                 result = {
                                     "error": "Could not search places at the provided itinerary locations"
+                                }
+
+                        attempted_weather_coord_retry = False
+                        if self._is_get_weather_missing_latlong_error(
+                            function_name, result
+                        ):
+                            coords = await sync_to_async(
+                                self._extract_collection_coordinates,
+                                thread_sensitive=True,
+                            )(collection)
+                            if coords is not None:
+                                retry_lat, retry_lon = coords
+                                retry_arguments = dict(prepared_arguments)
+                                retry_arguments["latitude"] = retry_lat
+                                retry_arguments["longitude"] = retry_lon
+                                attempted_weather_coord_retry = True
+                                retry_result = await sync_to_async(
+                                    execute_tool,
+                                    thread_sensitive=True,
+                                )(
+                                    function_name,
+                                    request.user,
+                                    **retry_arguments,
+                                )
+                                if not self._is_required_param_tool_error(
+                                    retry_result
+                                ) and not self._is_execution_failure_tool_error(
+                                    retry_result
+                                ):
+                                    result = retry_result
+                                    tool_call_for_history = {
+                                        **tool_call,
+                                        "function": {
+                                            **function_payload,
+                                            "name": function_name,
+                                            "arguments": json.dumps(retry_arguments),
+                                        },
+                                    }
+
+                            # If retry was attempted but still failed, convert to an
+                            # execution failure — never ask the user for coordinates
+                            # they implied via collection context.
+                            if (
+                                attempted_weather_coord_retry
+                                and self._is_required_param_tool_error(result)
+                            ):
+                                result = {
+                                    "error": "Could not fetch weather for the collection locations"
                                 }
 
                         if self._is_required_param_tool_error(result):
