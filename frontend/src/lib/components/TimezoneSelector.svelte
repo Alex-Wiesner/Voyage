@@ -82,7 +82,7 @@
 		role="button"
 		aria-haspopup="listbox"
 		aria-expanded={dropdownOpen}
-		class="input input-bordered flex justify-between items-center cursor-pointer"
+		class="input flex justify-between items-center cursor-pointer"
 		on:pointerdown={(e) => {
 			e.preventDefault();
 			e.stopPropagation();
@@ -116,7 +116,7 @@
 				<input
 					type="text"
 					placeholder="Search timezone"
-					class="input input-sm input-bordered w-full"
+					class="input input-sm w-full"
 					bind:value={searchQuery}
 					bind:this={searchInput}
 				/>

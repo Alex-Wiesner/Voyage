@@ -632,7 +632,7 @@
 								type="text"
 								id="name"
 								bind:value={transportation.name}
-								class="input input-bordered bg-base-100/80 focus:bg-base-100"
+								class="input bg-base-100/80 focus:bg-base-100"
 								placeholder={$t('transportation.enter_transportation_name')}
 								required
 							/>
@@ -646,7 +646,7 @@
 								>
 							</label>
 							<select
-								class="select select-bordered w-full bg-base-100/80 focus:bg-base-100"
+								class="select w-full bg-base-100/80 focus:bg-base-100"
 								name="type"
 								id="type"
 								required
@@ -668,7 +668,7 @@
 								type="text"
 								id="flight_number"
 								bind:value={transportation.flight_number}
-								class="input input-bordered bg-base-100/80 focus:bg-base-100"
+								class="input bg-base-100/80 focus:bg-base-100"
 								placeholder={$t('transportation.enter_flight_number')}
 							/>
 						</div>
@@ -687,7 +687,7 @@
 										id="start_code"
 										value={startCodeField}
 										on:input={handleStartCodeEvent}
-										class="input input-bordered bg-base-100/80 focus:bg-base-100 uppercase"
+										class="input bg-base-100/80 focus:bg-base-100 uppercase"
 										maxlength="5"
 										placeholder={airportMode ? 'JFK' : $t('transportation.departure_code')}
 									/>
@@ -703,7 +703,7 @@
 										id="end_code"
 										value={endCodeField}
 										on:input={handleEndCodeEvent}
-										class="input input-bordered bg-base-100/80 focus:bg-base-100 uppercase"
+										class="input bg-base-100/80 focus:bg-base-100 uppercase"
 										maxlength="5"
 										placeholder={airportMode ? 'LHR' : $t('transportation.arrival_code')}
 									/>
@@ -723,7 +723,7 @@
 								type="url"
 								id="link"
 								bind:value={transportation.link}
-								class="input input-bordered bg-base-100/80 focus:bg-base-100"
+								class="input bg-base-100/80 focus:bg-base-100"
 								placeholder={$t('transportation.enter_link')}
 							/>
 						</div>
@@ -830,7 +830,7 @@
 							{#if allDay}
 								<DateInput
 									id="departure-date"
-									inputClass="input input-bordered bg-base-100/80 focus:bg-base-100"
+									inputClass="input bg-base-100/80 focus:bg-base-100"
 									bind:value={localStartDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : undefined}
@@ -839,7 +839,7 @@
 							{:else}
 								<DateTimeInput
 									id="departure-date"
-									inputClass="input input-bordered bg-base-100/80 focus:bg-base-100"
+									inputClass="input bg-base-100/80 focus:bg-base-100"
 									bind:value={localStartDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : undefined}
@@ -856,7 +856,7 @@
 							{#if allDay}
 								<DateInput
 									id="arrival-date"
-									inputClass="input input-bordered bg-base-100/80 focus:bg-base-100"
+									inputClass="input bg-base-100/80 focus:bg-base-100"
 									bind:value={localEndDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : undefined}
@@ -865,7 +865,7 @@
 							{:else}
 								<DateTimeInput
 									id="arrival-date"
-									inputClass="input input-bordered bg-base-100/80 focus:bg-base-100"
+									inputClass="input bg-base-100/80 focus:bg-base-100"
 									bind:value={localEndDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : undefined}

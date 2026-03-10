@@ -95,7 +95,7 @@
 >
 	<button
 		type="button"
-		class="input input-bordered w-full justify-between gap-3 bg-base-100/80 focus:bg-base-100 flex items-center"
+		class="input w-full justify-between gap-3 bg-base-100/80 focus:bg-base-100 flex items-center"
 		aria-haspopup="listbox"
 		aria-expanded={open}
 		aria-controls={id ? `${id}-listbox` : undefined}
@@ -130,7 +130,7 @@
 	<div class="dropdown-content z-50 w-full">
 		<div class="card border border-base-300 bg-base-100 shadow-xl w-80 max-w-full">
 			<div class="p-3 space-y-3">
-				<label class="input input-bordered flex items-center gap-2">
+				<label class="input flex items-center gap-2">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-4 w-4 text-base-content/70"

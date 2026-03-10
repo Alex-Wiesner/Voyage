@@ -686,7 +686,7 @@
 					type="text"
 					id="location-display"
 					bind:value={displayName}
-					class="input input-bordered bg-base-100/80 focus:bg-base-100"
+					class="input bg-base-100/80 focus:bg-base-100"
 					placeholder={displayNamePlaceholder || $t('adventures.enter_location_display_name')}
 				/>
 			</div>
@@ -713,7 +713,7 @@
 						placeholder={airportMode
 							? $t('adventures.airport_code_examples')
 							: $t('transportation.enter_from_location')}
-						class="input input-bordered w-full pl-10 pr-4 bg-base-100/80 focus:bg-base-100"
+						class="input w-full pl-10 pr-4 bg-base-100/80 focus:bg-base-100"
 						class:input-success={selectedStartLocation}
 					/>
 					{#if startSearchQuery && !selectedStartLocation}
@@ -779,7 +779,7 @@
 						placeholder={airportMode
 							? $t('adventures.airport_code_examples')
 							: $t('transportation.enter_to_location')}
-						class="input input-bordered w-full pl-10 pr-4 bg-base-100/80 focus:bg-base-100"
+						class="input w-full pl-10 pr-4 bg-base-100/80 focus:bg-base-100"
 						class:input-error={selectedEndLocation}
 					/>
 					{#if endSearchQuery && !selectedEndLocation}
@@ -893,7 +893,7 @@
 						bind:value={searchQuery}
 						on:input={handleSearchInput}
 						placeholder={$t('adventures.search_placeholder')}
-						class="input input-bordered w-full pl-10 pr-4 bg-base-100/80 focus:bg-base-100"
+						class="input w-full pl-10 pr-4 bg-base-100/80 focus:bg-base-100"
 						class:input-primary={selectedLocation}
 					/>
 					{#if searchQuery && !selectedLocation}
@@ -959,7 +959,7 @@
 						type="text"
 						id="location-display-after"
 						bind:value={displayName}
-						class="input input-bordered bg-base-100/80 focus:bg-base-100"
+						class="input bg-base-100/80 focus:bg-base-100"
 						placeholder={displayNamePlaceholder || $t('adventures.enter_location_display_name')}
 					/>
 				</div>

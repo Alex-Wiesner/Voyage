@@ -24,7 +24,7 @@
 					name="password"
 					placeholder="Enter new password"
 					required
-					class="input input-bordered w-full"
+					class="input w-full"
 				/>
 			</div>
 
@@ -38,7 +38,7 @@
 					name="confirm_password"
 					placeholder="Confirm new password"
 					required
-					class="input input-bordered w-full"
+					class="input w-full"
 				/>
 			</div>
 

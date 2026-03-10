@@ -1,0 +1,107 @@
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+@plugin "daisyui" {
+	themes:
+		light --default,
+		dark --prefersdark,
+		night,
+		retro,
+		forest,
+		aqua,
+		emerald,
+		dim;
+}
+
+@plugin "daisyui/theme" {
+	name: 'aestheticDark';
+	color-scheme: dark;
+
+	--color-primary: oklch(from #3e5747 l c h);
+	--color-primary-content: oklch(from #e9e7e7 l c h);
+	--color-secondary: oklch(from #547b82 l c h);
+	--color-secondary-content: oklch(from #c1dfe5 l c h);
+	--color-accent: oklch(from #8b6161 l c h);
+	--color-accent-content: oklch(from #f2eaea l c h);
+	--color-neutral: oklch(from #2b2a2a l c h);
+	--color-neutral-content: oklch(from #e9e7e7 l c h);
+	--color-base-100: oklch(from #121212 l c h);
+	--color-base-200: oklch(from #1d1d1d l c h);
+	--color-base-300: oklch(from #292929 l c h);
+	--color-base-content: oklch(from #e9e7e7 l c h);
+	--color-info: oklch(from #3b7ecb l c h);
+	--color-success: oklch(from #007766 l c h);
+	--color-warning: oklch(from #d4c111 l c h);
+	--color-error: oklch(from #e64a19 l c h);
+	--radius-box: 1rem;
+	--radius-field: 0.5rem;
+	--radius-selector: 1.9rem;
+}
+
+@plugin "daisyui/theme" {
+	name: 'catppuccinMocha';
+	color-scheme: dark;
+
+	--color-primary: oklch(from #89b4fa l c h);
+	--color-primary-content: oklch(from #1e1e2e l c h);
+	--color-secondary: oklch(from #f5c2e7 l c h);
+	--color-secondary-content: oklch(from #1e1e2e l c h);
+	--color-accent: oklch(from #a6e3a1 l c h);
+	--color-accent-content: oklch(from #1e1e2e l c h);
+	--color-neutral: oklch(from #313244 l c h);
+	--color-neutral-content: oklch(from #cdd6f4 l c h);
+	--color-base-100: oklch(from #1e1e2e l c h);
+	--color-base-200: oklch(from #181825 l c h);
+	--color-base-300: oklch(from #11111b l c h);
+	--color-base-content: oklch(from #cdd6f4 l c h);
+	--color-info: oklch(from #89dceb l c h);
+	--color-success: oklch(from #a6e3a1 l c h);
+	--color-warning: oklch(from #f9e2af l c h);
+	--color-error: oklch(from #f38ba8 l c h);
+}
+
+@plugin "daisyui/theme" {
+	name: 'aestheticLight';
+	color-scheme: light;
+
+	--color-primary: oklch(from #5a7c65 l c h);
+	--color-primary-content: oklch(from #dcd5d5 l c h);
+	--color-secondary: oklch(from #a8cfd7 l c h);
+	--color-secondary-content: oklch(from #177a9b l c h);
+	--color-accent: oklch(from #c78e8e l c h);
+	--color-accent-content: oklch(from #322020 l c h);
+	--color-neutral: oklch(from #5c5757 l c h);
+	--color-neutral-content: oklch(from #e9e7e7 l c h);
+	--color-base-100: oklch(from #e9e7e7 l c h);
+	--color-base-200: oklch(from #d1cccc l c h);
+	--color-base-300: oklch(from #b9b1b1 l c h);
+	--color-base-content: oklch(from #100f0f l c h);
+	--color-info: oklch(from #1c92f2 l c h);
+	--color-success: oklch(from #009485 l c h);
+	--color-warning: oklch(from #c8c21e l c h);
+	--color-error: oklch(from #ff5724 l c h);
+	--radius-box: 1rem;
+	--radius-field: 0.5rem;
+	--radius-selector: 1.9rem;
+}
+
+@plugin "daisyui/theme" {
+	name: 'northernLights';
+	color-scheme: dark;
+
+	--color-primary: oklch(from #479bb3 l c h);
+	--color-primary-content: oklch(from #eceff4 l c h);
+	--color-secondary: oklch(from #5e81ac l c h);
+	--color-secondary-content: oklch(from #eceff4 l c h);
+	--color-accent: oklch(from #b48ead l c h);
+	--color-accent-content: oklch(from #eceff4 l c h);
+	--color-neutral: oklch(from #4c566a l c h);
+	--color-neutral-content: oklch(from #d8dee9 l c h);
+	--color-base-100: oklch(from #2e3440 l c h);
+	--color-base-200: oklch(from #3b4252 l c h);
+	--color-base-300: oklch(from #434c5e l c h);
+	--color-base-content: oklch(from #eceff4 l c h);
+	--color-info: oklch(from #88c0d0 l c h);
+	--color-success: oklch(from #a3be8c l c h);
+	--color-warning: oklch(from #d08770 l c h);
+	--color-error: oklch(from #bf616a l c h);
+}

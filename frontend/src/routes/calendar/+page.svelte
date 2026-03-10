@@ -192,7 +192,7 @@
 							<input
 								type="text"
 								placeholder={$t('adventures.search_for_location')}
-								class="input input-bordered w-full pl-10 pr-10 bg-base-100/80"
+								class="input w-full pl-10 pr-10 bg-base-100/80"
 								bind:value={searchFilter}
 							/>
 							{#if searchFilter.length > 0}

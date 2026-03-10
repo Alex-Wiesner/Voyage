@@ -271,7 +271,7 @@
 										name="name"
 										readonly={isReadOnly}
 										bind:value={newNote.name}
-										class="input input-bordered w-full bg-base-100/80 focus:bg-base-100"
+										class="input w-full bg-base-100/80 focus:bg-base-100"
 										placeholder={$t('notes.enter_note_title')}
 										required
 									/>
@@ -314,7 +314,7 @@
 										min={constrainDates ? collection.start_date : ''}
 										max={constrainDates ? collection.end_date : ''}
 										bind:value={newNote.date}
-										inputClass="input input-bordered w-full bg-base-100/80 focus:bg-base-100"
+										inputClass="input w-full bg-base-100/80 focus:bg-base-100"
 									/>
 								</div>
 							</div>
@@ -330,7 +330,7 @@
 											<input
 												type="url"
 												id="new-link"
-												class="input input-bordered join-item flex-1 bg-base-100/80 focus:bg-base-100"
+												class="input join-item flex-1 bg-base-100/80 focus:bg-base-100"
 												placeholder="https://example.com"
 												bind:value={newLink}
 												on:keydown={(e) => {

@@ -18,7 +18,7 @@
 					type="email"
 					id="email"
 					placeholder="Enter your email"
-					class="input input-bordered w-full"
+					class="input w-full"
 					required
 				/>
 			</div>

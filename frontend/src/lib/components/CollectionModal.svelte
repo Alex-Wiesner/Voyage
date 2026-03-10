@@ -301,7 +301,7 @@
 										id="name"
 										name="name"
 										bind:value={collection.name}
-										class="input input-bordered w-full"
+										class="input w-full"
 										placeholder={$t('collection.enter_collection_name')}
 										required
 									/>
@@ -328,7 +328,7 @@
 										id="link"
 										name="link"
 										bind:value={collection.link}
-										class="input input-bordered w-full"
+										class="input w-full"
 										placeholder="https://example.com"
 									/>
 								</div>
@@ -513,7 +513,7 @@
 									type="text"
 									value="{window.location.origin}/collections/{collection.id}"
 									readonly
-									class="input input-bordered flex-1 font-mono text-sm"
+									class="input flex-1 font-mono text-sm"
 								/>
 								<button
 									type="button"

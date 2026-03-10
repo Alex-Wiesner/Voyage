@@ -4,7 +4,7 @@
 	export let value: string | null = ''; // ISO yyyy-mm-ddTHH:MM
 	export let id: string = '';
 	export let name: string = '';
-	export let inputClass: string = 'input input-bordered w-full';
+	export let inputClass: string = 'input w-full';
 	export let disabled: boolean = false;
 	export let min: string | null | undefined = undefined;
 	export let max: string | null | undefined = undefined;

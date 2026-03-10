@@ -822,7 +822,7 @@
 							{#if allDay}
 								<DateInput
 									id="start-date-input"
-									inputClass="input input-bordered w-full mt-1"
+									inputClass="input w-full mt-1"
 									bind:value={localStartDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : ''}
@@ -831,7 +831,7 @@
 							{:else}
 								<DateTimeInput
 									id="start-date-input"
-									inputClass="input input-bordered w-full mt-1"
+									inputClass="input w-full mt-1"
 									bind:value={localStartDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : ''}
@@ -849,7 +849,7 @@
 								{#if allDay}
 									<DateInput
 										id="end-date-input"
-										inputClass="input input-bordered w-full mt-1"
+										inputClass="input w-full mt-1"
 										bind:value={localEndDate}
 										on:change={handleLocalDateChange}
 										min={constrainDates ? localStartDate : ''}
@@ -858,7 +858,7 @@
 								{:else}
 									<DateTimeInput
 										id="end-date-input"
-										inputClass="input input-bordered w-full mt-1"
+										inputClass="input w-full mt-1"
 										bind:value={localEndDate}
 										on:change={handleLocalDateChange}
 										min={constrainDates ? localStartDate : ''}
@@ -877,7 +877,7 @@
 						>
 						<textarea
 							id="visit-notes"
-							class="textarea textarea-bordered w-full mt-1"
+							class="textarea w-full mt-1"
 							rows="3"
 							placeholder={$t('adventures.notes_placeholder') + '...'}
 							bind:value={note}
@@ -1075,7 +1075,7 @@
 																id="gpx-file-{visit.id}"
 																type="file"
 																accept=".gpx"
-																class="file-input file-input-bordered file-input-warning flex-1"
+																class="file-input file-input-warning flex-1"
 																on:change={handleGpxFileChange}
 															/>
 															<button
@@ -1109,7 +1109,7 @@
 														<input
 															id="activity-name-{visit.id}"
 															type="text"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder={$t('adventures.activity_name_placeholder')}
 															bind:value={activityForm.name}
 														/>
@@ -1123,7 +1123,7 @@
 														>
 														<select
 															id="sport-type-{visit.id}"
-															class="select select-bordered select-sm w-full mt-1"
+															class="select select-sm w-full mt-1"
 															bind:value={activityForm.sport_type}
 															disabled={!!pendingStravaImport[visit.id]}
 														>
@@ -1144,7 +1144,7 @@
 															id="distance-{visit.id}"
 															type="number"
 															step="0.01"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="5.2"
 															bind:value={activityForm.distance}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1161,7 +1161,7 @@
 														<input
 															id="moving-time-{visit.id}"
 															type="text"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="0:25:30"
 															bind:value={activityForm.moving_time}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1178,7 +1178,7 @@
 														<input
 															id="elapsed-time-{visit.id}"
 															type="text"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="0:30:00"
 															bind:value={activityForm.elapsed_time}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1193,7 +1193,7 @@
 														>
 														<DateTimeInput
 															id="start-date-{visit.id}"
-															inputClass="input input-bordered input-sm w-full mt-1"
+															inputClass="input input-sm w-full mt-1"
 															bind:value={activityForm.start_date}
 															readonly={!!pendingStravaImport[visit.id]}
 														/>
@@ -1210,7 +1210,7 @@
 															<input
 																id="elevation-gain-{visit.id}"
 																type="number"
-																class="input input-bordered input-sm w-full mt-1"
+																class="input input-sm w-full mt-1"
 																placeholder="150"
 																bind:value={activityForm.elevation_gain}
 																readonly={!!pendingStravaImport[visit.id]}
@@ -1229,7 +1229,7 @@
 															<input
 																id="elevation-loss-{visit.id}"
 																type="number"
-																class="input input-bordered input-sm w-full mt-1"
+																class="input input-sm w-full mt-1"
 																placeholder="150"
 																bind:value={activityForm.elevation_loss}
 																readonly={!!pendingStravaImport[visit.id]}
@@ -1245,7 +1245,7 @@
 														<input
 															id="calories-{visit.id}"
 															type="number"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="300"
 															bind:value={activityForm.calories}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1263,7 +1263,7 @@
 															<input
 																id="elevation-high-{visit.id}"
 																type="number"
-																class="input input-bordered input-sm w-full mt-1"
+																class="input input-sm w-full mt-1"
 																placeholder="2000"
 																bind:value={activityForm.elev_high}
 																readonly={!!pendingStravaImport[visit.id]}
@@ -1282,7 +1282,7 @@
 															<input
 																id="elevation-low-{visit.id}"
 																type="number"
-																class="input input-bordered input-sm w-full mt-1"
+																class="input input-sm w-full mt-1"
 																placeholder="1000"
 																bind:value={activityForm.elev_low}
 																readonly={!!pendingStravaImport[visit.id]}
@@ -1298,7 +1298,7 @@
 														<input
 															id="rest-time-{visit.id}"
 															type="number"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="60"
 															bind:value={activityForm.rest_time}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1314,7 +1314,7 @@
 															id="start-lat-{visit.id}"
 															type="number"
 															step="any"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="37.7749"
 															bind:value={activityForm.start_lat}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1330,7 +1330,7 @@
 															id="start-lng-{visit.id}"
 															type="number"
 															step="any"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="-122.4194"
 															bind:value={activityForm.start_lng}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1346,7 +1346,7 @@
 															id="end-lat-{visit.id}"
 															type="number"
 															step="any"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="37.7749"
 															bind:value={activityForm.end_lat}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1362,7 +1362,7 @@
 															id="end-lng-{visit.id}"
 															type="number"
 															step="any"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="-122.4194"
 															bind:value={activityForm.end_lng}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1388,7 +1388,7 @@
 															id="average-speed-{visit.id}"
 															type="number"
 															step="any"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="3.5"
 															bind:value={activityForm.average_speed}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1404,7 +1404,7 @@
 															id="max-speed-{visit.id}"
 															type="number"
 															step="any"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="5.0"
 															bind:value={activityForm.max_speed}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1422,7 +1422,7 @@
 															id="average-cadence-{visit.id}"
 															type="number"
 															step="any"
-															class="input input-bordered input-sm w-full mt-1"
+															class="input input-sm w-full mt-1"
 															placeholder="80"
 															bind:value={activityForm.average_cadence}
 															readonly={!!pendingStravaImport[visit.id]}
@@ -1438,7 +1438,7 @@
 															>
 															<select
 																id="trail-select-{visit.id}"
-																class="select select-bordered select-sm w-full mt-1"
+																class="select select-sm w-full mt-1"
 																bind:value={activityForm.trail}
 															>
 																<option value="">Select a trail</option>
@@ -1460,7 +1460,7 @@
 																id="gpx-file-manual-{visit.id}"
 																type="file"
 																accept=".gpx"
-																class="file-input file-input-bordered file-input-sm w-full mt-1"
+																class="file-input file-input-sm w-full mt-1"
 																on:change={handleGpxFileChange}
 															/>
 														</div>

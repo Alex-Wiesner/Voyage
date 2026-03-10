@@ -526,7 +526,7 @@
 								type="text"
 								id="name"
 								bind:value={lodging.name}
-								class="input input-bordered bg-base-100/80 focus:bg-base-100"
+								class="input bg-base-100/80 focus:bg-base-100"
 								placeholder={$t('lodging.enter_lodging_name')}
 								required
 							/>
@@ -540,7 +540,7 @@
 								>
 							</label>
 							<select
-								class="select select-bordered w-full bg-base-100/80 focus:bg-base-100"
+								class="select w-full bg-base-100/80 focus:bg-base-100"
 								name="type"
 								id="type"
 								required
@@ -570,7 +570,7 @@
 								type="text"
 								id="reservation"
 								bind:value={lodging.reservation_number}
-								class="input input-bordered bg-base-100/80 focus:bg-base-100"
+								class="input bg-base-100/80 focus:bg-base-100"
 								placeholder={$t('lodging.enter_reservation_number')}
 							/>
 						</div>
@@ -587,7 +587,7 @@
 								type="url"
 								id="link"
 								bind:value={lodging.link}
-								class="input input-bordered bg-base-100/80 focus:bg-base-100"
+								class="input bg-base-100/80 focus:bg-base-100"
 								placeholder={$t('transportation.enter_link')}
 							/>
 						</div>
@@ -694,7 +694,7 @@
 							{#if allDay}
 								<DateInput
 									id="check-in"
-									inputClass="input input-bordered bg-base-100/80 focus:bg-base-100"
+									inputClass="input bg-base-100/80 focus:bg-base-100"
 									bind:value={localStartDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : undefined}
@@ -703,7 +703,7 @@
 							{:else}
 								<DateTimeInput
 									id="check-in"
-									inputClass="input input-bordered bg-base-100/80 focus:bg-base-100"
+									inputClass="input bg-base-100/80 focus:bg-base-100"
 									bind:value={localStartDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : undefined}
@@ -720,7 +720,7 @@
 							{#if allDay}
 								<DateInput
 									id="check-out"
-									inputClass="input input-bordered bg-base-100/80 focus:bg-base-100"
+									inputClass="input bg-base-100/80 focus:bg-base-100"
 									bind:value={localEndDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : undefined}
@@ -729,7 +729,7 @@
 							{:else}
 								<DateTimeInput
 									id="check-out"
-									inputClass="input input-bordered bg-base-100/80 focus:bg-base-100"
+									inputClass="input bg-base-100/80 focus:bg-base-100"
 									bind:value={localEndDate}
 									on:change={handleLocalDateChange}
 									min={constrainDates ? constraintStartDate : undefined}

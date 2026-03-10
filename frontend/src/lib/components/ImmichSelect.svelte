@@ -237,7 +237,7 @@
 			type="text"
 			placeholder={$t('immich.image_search_placeholder') + '...'}
 			bind:value={immichSearchValue}
-			class="input input-bordered flex-1"
+			class="input flex-1"
 			disabled={loading}
 		/>
 		<button
@@ -255,17 +255,12 @@
 		<DateInput
 			id="date-picker"
 			bind:value={selectedDate}
-			inputClass="input input-bordered flex-1"
+			inputClass="input flex-1"
 			disabled={loading}
 		/>
 	</div>
 {:else if searchCategory === 'album'}
-	<select
-		id="album-select"
-		class="select select-bordered w-full"
-		bind:value={currentAlbum}
-		disabled={loading}
-	>
+	<select id="album-select" class="select w-full" bind:value={currentAlbum} disabled={loading}>
 		<option value="" disabled>
 			{albums.length > 0 ? $t('immich.select_album') : $t('immich.loading_albums')}
 		</option>

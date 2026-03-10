@@ -211,14 +211,14 @@
 						<input
 							type="text"
 							placeholder={$t('categories.category_name')}
-							class="input input-bordered w-full h-12 text-base"
+							class="input w-full h-12 text-base"
 							bind:value={newCategory.display_name}
 						/>
 						<div class="join w-full">
 							<input
 								type="text"
 								placeholder={$t('categories.icon')}
-								class="input input-bordered join-item flex-1 h-12 text-base"
+								class="input join-item flex-1 h-12 text-base"
 								bind:value={newCategory.icon}
 							/>
 							<button
@@ -286,7 +286,7 @@
 							<input
 								type="text"
 								placeholder={$t('navbar.search')}
-								class="input input-bordered w-full h-12 text-base"
+								class="input w-full h-12 text-base"
 								bind:value={searchTerm}
 								bind:this={mobileSearchInputRef}
 							/>
@@ -367,14 +367,14 @@
 					<input
 						type="text"
 						placeholder={$t('categories.category_name')}
-						class="input input-bordered input-sm w-full"
+						class="input input-sm w-full"
 						bind:value={newCategory.display_name}
 					/>
 					<div class="input-group">
 						<input
 							type="text"
 							placeholder={$t('categories.icon')}
-							class="input input-bordered input-sm flex-1"
+							class="input input-sm flex-1"
 							bind:value={newCategory.icon}
 						/>
 						<button
@@ -443,7 +443,7 @@
 					<input
 						type="text"
 						placeholder={$t('navbar.search')}
-						class="input input-bordered input-sm w-full"
+						class="input input-sm w-full"
 						bind:value={searchTerm}
 						bind:this={desktopSearchInputRef}
 					/>

@@ -200,7 +200,7 @@
 								<input
 									type="text"
 									value={secret}
-									class="input input-bordered w-full font-mono text-sm bg-base-100/80"
+									class="input w-full font-mono text-sm bg-base-100/80"
 									readonly
 								/>
 							</div>
@@ -230,7 +230,7 @@
 						<input
 							type="text"
 							placeholder={$t('settings.enter_6_digit_code')}
-							class="input input-bordered bg-base-100/80 font-mono text-center text-lg tracking-widest"
+							class="input bg-base-100/80 font-mono text-center text-lg tracking-widest"
 							bind:value={first_code}
 							maxlength="6"
 						/>
@@ -276,7 +276,7 @@
 									<input
 										type="text"
 										value={code}
-										class="input input-bordered input-sm w-full font-mono text-center bg-base-100/80 pr-10"
+										class="input input-sm w-full font-mono text-center bg-base-100/80 pr-10"
 										readonly
 									/>
 									<button

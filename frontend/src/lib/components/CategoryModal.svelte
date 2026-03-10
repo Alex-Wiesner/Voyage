@@ -227,7 +227,7 @@
 							</label>
 							<input
 								type="text"
-								class="input input-bordered w-full"
+								class="input w-full"
 								bind:value={categoryToEdit.display_name}
 								required
 							/>
@@ -238,11 +238,7 @@
 								<span class="label-text">{$t('categories.icon')}</span>
 							</label>
 							<div class="flex gap-2">
-								<input
-									type="text"
-									class="input input-bordered flex-1"
-									bind:value={categoryToEdit.icon}
-								/>
+								<input type="text" class="input flex-1" bind:value={categoryToEdit.icon} />
 								<button
 									type="button"
 									on:click={() => (showEmojiPickerEdit = !showEmojiPickerEdit)}
@@ -284,7 +280,7 @@
 							</label>
 							<input
 								type="text"
-								class="input input-bordered w-full"
+								class="input w-full"
 								bind:value={newCategory.display_name}
 								required
 							/>
@@ -298,7 +294,7 @@
 							<div class="flex gap-2">
 								<input
 									type="text"
-									class="input input-bordered flex-1"
+									class="input flex-1"
 									bind:value={newCategory.icon}
 									placeholder="🌍"
 								/>

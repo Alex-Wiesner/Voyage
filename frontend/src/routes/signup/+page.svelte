@@ -63,7 +63,7 @@
 												name="username"
 												id="username"
 												type="text"
-												class="input input-bordered w-full focus:input-primary"
+												class="input w-full focus:input-primary"
 												placeholder="Choose a username"
 												autocomplete="username"
 												required
@@ -79,7 +79,7 @@
 												name="email"
 												id="email"
 												type="email"
-												class="input input-bordered w-full focus:input-primary"
+												class="input w-full focus:input-primary"
 												placeholder="Enter your email"
 												autocomplete="email"
 												required
@@ -96,7 +96,7 @@
 													name="first_name"
 													id="first_name"
 													type="text"
-													class="input input-bordered w-full focus:input-primary"
+													class="input w-full focus:input-primary"
 													placeholder="First name"
 													autocomplete="given-name"
 													required
@@ -110,7 +110,7 @@
 													name="last_name"
 													id="last_name"
 													type="text"
-													class="input input-bordered w-full focus:input-primary"
+													class="input w-full focus:input-primary"
 													placeholder="Last name"
 													autocomplete="family-name"
 													required
@@ -127,7 +127,7 @@
 												type="password"
 												name="password1"
 												id="password"
-												class="input input-bordered w-full focus:input-primary"
+												class="input w-full focus:input-primary"
 												placeholder="Create a password"
 												autocomplete="new-password"
 												required
@@ -143,7 +143,7 @@
 												type="password"
 												name="password2"
 												id="password2"
-												class="input input-bordered w-full focus:input-primary"
+												class="input w-full focus:input-primary"
 												placeholder="Confirm your password"
 												autocomplete="new-password"
 												required

@@ -312,7 +312,7 @@
 								type="text"
 								id="name"
 								bind:value={location.name}
-								class="input input-bordered bg-base-100/80 focus:bg-base-100"
+								class="input bg-base-100/80 focus:bg-base-100"
 								placeholder="Enter location name"
 								required
 							/>
@@ -367,7 +367,7 @@
 								type="url"
 								id="link"
 								bind:value={location.link}
-								class="input input-bordered bg-base-100/80 focus:bg-base-100"
+								class="input bg-base-100/80 focus:bg-base-100"
 								placeholder="https://example.com"
 							/>
 						</div>
@@ -442,7 +442,7 @@
 						name="tags"
 						hidden
 						bind:value={location.tags}
-						class="input input-bordered w-full"
+						class="input w-full"
 					/>
 					<TagComplete bind:tags={location.tags} />
 				</div>

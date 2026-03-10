@@ -277,7 +277,7 @@
 							on:input={handleSearchInput}
 							placeholder={$t('adventures.search_placeholder') ||
 								'Enter city, location, or landmark...'}
-							class="input input-bordered w-full pl-10 pr-4"
+							class="input w-full pl-10 pr-4"
 							class:input-primary={selectedLocation}
 						/>
 						{#if searchQuery && !selectedLocation}

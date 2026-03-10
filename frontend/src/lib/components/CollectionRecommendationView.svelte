@@ -404,7 +404,7 @@
 								>{$t('recomendations.search_around_location')}</span
 							>
 						</label>
-						<select class="select select-bordered w-full" bind:value={selectedLocationId}>
+						<select class="select w-full" bind:value={selectedLocationId}>
 							<option value={null}>{$t('recomendations.use_search_instead')}...</option>
 							{#each locationsWithCoords as location}
 								<option value={location.id}>{location.name}</option>
@@ -421,7 +421,7 @@
 					<input
 						type="text"
 						placeholder={$t('adventures.search_placeholder')}
-						class="input input-bordered w-full"
+						class="input w-full"
 						bind:value={searchQuery}
 						disabled={selectedLocationId !== null}
 						on:keydown={(e) => e.key === 'Enter' && searchRecommendations()}
@@ -433,7 +433,7 @@
 					<label class="label">
 						<span class="label-text font-semibold">{$t('adventures.category')}</span>
 					</label>
-					<select class="select select-bordered w-full" bind:value={selectedCategory}>
+					<select class="select w-full" bind:value={selectedCategory}>
 						<option value="tourism">🏛️ {$t('recomendations.tourism')}</option>
 						<option value="lodging">🏨 {$t('recomendations.lodging')}</option>
 						<option value="food">🍴 {$t('recomendations.food')}</option>
@@ -447,7 +447,7 @@
 							>{$t('recomendations.search_radius_label')} {radiusDisplay}</span
 						>
 					</label>
-					<select class="select select-bordered w-full" bind:value={radiusValue}>
+					<select class="select w-full" bind:value={radiusValue}>
 						{#each radiusOptions as option}
 							<option value={option.value}>{option.label}</option>
 						{/each}
@@ -480,7 +480,7 @@
 						<label class="label">
 							<span class="label-text">{$t('recomendations.minimum_rating')}</span>
 						</label>
-						<select class="select select-bordered select-sm" bind:value={minRating}>
+						<select class="select select-sm" bind:value={minRating}>
 							<option value={0}>{$t('recomendations.any')}</option>
 							<option value={3}>3+ ⭐</option>
 							<option value={3.5}>3.5+ ⭐</option>
@@ -494,7 +494,7 @@
 						<label class="label">
 							<span class="label-text">{$t('recomendations.minimum_reviews')}</span>
 						</label>
-						<select class="select select-bordered select-sm" bind:value={minReviews}>
+						<select class="select select-sm" bind:value={minReviews}>
 							<option value={0}>{$t('recomendations.any')}</option>
 							<option value={10}>10+</option>
 							<option value={50}>50+</option>

@@ -369,7 +369,7 @@
 				<input
 					type="file"
 					bind:this={fileInput}
-					class="file-input file-input-bordered w-full"
+					class="file-input w-full"
 					accept="image/*"
 					multiple
 					disabled={isLoading}
@@ -386,7 +386,7 @@
 					<input
 						type="url"
 						bind:value={url}
-						class="input input-bordered flex-1"
+						class="input flex-1"
 						placeholder="https://example.com/image.jpg"
 						disabled={isLoading}
 					/>
@@ -415,7 +415,7 @@
 					<input
 						type="text"
 						bind:value={imageSearch}
-						class="input input-bordered flex-1"
+						class="input flex-1"
 						placeholder="Search Wikipedia for images"
 						disabled={isLoading}
 					/>

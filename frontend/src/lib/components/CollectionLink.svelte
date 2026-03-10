@@ -197,7 +197,7 @@
 					<input
 						type="text"
 						placeholder={$t('navbar.search')}
-						class="input input-bordered w-full pl-10 pr-10 bg-base-100/80"
+						class="input w-full pl-10 pr-10 bg-base-100/80"
 						bind:value={searchQuery}
 					/>
 					{#if searchQuery.length > 0}

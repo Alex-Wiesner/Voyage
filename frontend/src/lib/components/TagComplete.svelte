@@ -51,7 +51,7 @@
 	<div class="flex gap-2">
 		<input
 			type="text"
-			class="input input-bordered w-full"
+			class="input w-full"
 			placeholder={$t('adventures.add_a_tag')}
 			bind:value={inputVal}
 			on:keydown={(e) => {

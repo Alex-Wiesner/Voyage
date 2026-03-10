@@ -185,7 +185,7 @@
 							{$t('navbar.search')}
 						</h3>
 						<form class="flex gap-2" on:submit={searchGo}>
-							<label class="input input-bordered flex items-center gap-2 flex-1">
+							<label class="input flex items-center gap-2 flex-1">
 								<Magnify class="h-4 w-4 opacity-70" />
 								<input
 									type="text"
@@ -260,7 +260,7 @@
 		{#if data.user}
 			<form class="hidden lg:flex gap-2" on:submit={searchGo}>
 				<label
-					class="input input-bordered input-sm flex items-center gap-2 w-64 focus-within:w-80 transition-all duration-300"
+					class="input input-sm flex items-center gap-2 w-64 focus-within:w-80 transition-all duration-300"
 				>
 					<input
 						type="text"
@@ -338,7 +338,7 @@
 					</h3>
 					<form method="POST" use:enhance>
 						<select
-							class="select select-bordered select-sm w-full bg-base-100"
+							class="select select-sm w-full bg-base-100"
 							on:change={submitLocaleChange}
 							bind:value={$locale}
 						>
@@ -357,7 +357,7 @@
 					</h3>
 					<form method="POST" use:enhance={submitUpdateTheme}>
 						<select
-							class="select select-bordered select-sm w-full bg-base-100"
+							class="select select-sm w-full bg-base-100"
 							bind:value={theme}
 							on:change={submitThemeChange}
 						>

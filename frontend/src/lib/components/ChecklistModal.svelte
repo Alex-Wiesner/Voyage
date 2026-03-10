@@ -252,7 +252,7 @@
 										name="name"
 										readonly={isReadOnly}
 										bind:value={newChecklist.name}
-										class="input input-bordered w-full bg-base-100/80 focus:bg-base-100"
+										class="input w-full bg-base-100/80 focus:bg-base-100"
 										placeholder={$t('checklist.enter_checklist_title')}
 										required
 									/>
@@ -298,7 +298,7 @@
 										min={constrainDates ? collection.start_date : ''}
 										max={constrainDates ? collection.end_date : ''}
 										bind:value={newChecklist.date}
-										inputClass="input input-bordered w-full bg-base-100/80 focus:bg-base-100"
+										inputClass="input w-full bg-base-100/80 focus:bg-base-100"
 									/>
 								</div>
 							</div>
@@ -343,7 +343,7 @@
 											id="new-item"
 											placeholder={$t('checklist.new_item')}
 											bind:value={newItem}
-											class="input input-bordered join-item flex-1 bg-base-100/80 focus:bg-base-100"
+											class="input join-item flex-1 bg-base-100/80 focus:bg-base-100"
 											on:keydown={(e) => {
 												if (e.key === 'Enter') {
 													e.preventDefault();

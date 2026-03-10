@@ -56,7 +56,7 @@
 		<input
 			id="money-input"
 			type="number"
-			class="input input-bordered bg-base-100/80 focus:bg-base-100 flex-1"
+			class="input bg-base-100/80 focus:bg-base-100 flex-1"
 			{placeholder}
 			bind:value={value.amount}
 			{min}

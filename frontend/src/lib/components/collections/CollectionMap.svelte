@@ -701,7 +701,7 @@
 			<div class="divider my-2"></div>
 			<div class="space-y-4">
 				<!-- Search Bar -->
-				<label class="input input-bordered input-sm flex items-center gap-2">
+				<label class="input input-sm flex items-center gap-2">
 					<SearchIcon class="h-4 w-4 opacity-70" />
 					<input
 						type="text"
@@ -862,7 +862,7 @@
 							id="start-date-filter"
 							name="start-date-filter"
 							bind:value={startDateFilter}
-							inputClass="input input-sm input-bordered w-full"
+							inputClass="input input-sm w-full"
 							min={collectionStartDateISO}
 							max={collectionEndDateISO}
 						/>
@@ -873,7 +873,7 @@
 							id="end-date-filter"
 							name="end-date-filter"
 							bind:value={endDateFilter}
-							inputClass="input input-sm input-bordered w-full"
+							inputClass="input input-sm w-full"
 							min={collectionStartDateISO}
 							max={collectionEndDateISO}
 						/>

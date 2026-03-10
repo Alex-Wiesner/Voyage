@@ -109,7 +109,7 @@
 												name="username"
 												id="username"
 												type="text"
-												class="input input-bordered w-full focus:input-primary"
+												class="input w-full focus:input-primary"
 												placeholder={$t('auth.enter_username')}
 												autocomplete="username"
 											/>
@@ -124,7 +124,7 @@
 												type="password"
 												name="password"
 												id="password"
-												class="input input-bordered w-full focus:input-primary"
+												class="input w-full focus:input-primary"
 												placeholder={$t('auth.enter_password')}
 												autocomplete="current-password"
 											/>
@@ -143,7 +143,7 @@
 													inputmode="numeric"
 													pattern="[0-9]*"
 													autocomplete="one-time-code"
-													class="input input-bordered w-full focus:input-primary"
+													class="input w-full focus:input-primary"
 													placeholder="000000"
 													maxlength="6"
 												/>

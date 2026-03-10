@@ -340,12 +340,12 @@
 						<div class="label">
 							<span class="label-text">{$t('suggestions.cuisine_type')}</span>
 						</div>
-						<input class="input input-bordered" type="text" bind:value={filters.cuisine_type} />
+						<input class="input" type="text" bind:value={filters.cuisine_type} />
 					</label>
 
 					<label class="form-control w-full">
 						<div class="label"><span class="label-text">{$t('suggestions.price_range')}</span></div>
-						<select class="select select-bordered" bind:value={filters.price_range}>
+						<select class="select" bind:value={filters.price_range}>
 							<option value="">{$t('recomendations.any')}</option>
 							<option value="$">$</option>
 							<option value="$$">$$</option>
@@ -356,14 +356,14 @@
 
 					<label class="form-control w-full">
 						<div class="label"><span class="label-text">{$t('suggestions.dietary')}</span></div>
-						<input class="input input-bordered" type="text" bind:value={filters.dietary} />
+						<input class="input" type="text" bind:value={filters.dietary} />
 					</label>
 				{:else if selectedCategory === 'activity'}
 					<label class="form-control w-full">
 						<div class="label">
 							<span class="label-text">{$t('suggestions.activity_type')}</span>
 						</div>
-						<select class="select select-bordered" bind:value={filters.activity_type}>
+						<select class="select" bind:value={filters.activity_type}>
 							<option value="">{$t('recomendations.any')}</option>
 							{#each activityTypes as activityType}
 								<option value={activityType}>{activityType}</option>
@@ -373,7 +373,7 @@
 
 					<label class="form-control w-full">
 						<div class="label"><span class="label-text">{$t('suggestions.duration')}</span></div>
-						<select class="select select-bordered" bind:value={filters.duration}>
+						<select class="select" bind:value={filters.duration}>
 							<option value="">{$t('recomendations.any')}</option>
 							{#each durations as duration}
 								<option value={duration}>{duration}</option>
@@ -383,14 +383,14 @@
 				{:else if selectedCategory === 'event'}
 					<label class="form-control w-full">
 						<div class="label"><span class="label-text">{$t('suggestions.event_type')}</span></div>
-						<input class="input input-bordered" type="text" bind:value={filters.event_type} />
+						<input class="input" type="text" bind:value={filters.event_type} />
 					</label>
 
 					<label class="form-control w-full">
 						<div class="label">
 							<span class="label-text">{$t('suggestions.time_preference')}</span>
 						</div>
-						<select class="select select-bordered" bind:value={filters.time_preference}>
+						<select class="select" bind:value={filters.time_preference}>
 							<option value="">{$t('recomendations.any')}</option>
 							{#each timePreferences as timePreference}
 								<option value={timePreference}>{timePreference}</option>
@@ -402,7 +402,7 @@
 						<div class="label">
 							<span class="label-text">{$t('suggestions.lodging_type')}</span>
 						</div>
-						<select class="select select-bordered" bind:value={filters.lodging_type}>
+						<select class="select" bind:value={filters.lodging_type}>
 							<option value="">{$t('recomendations.any')}</option>
 							{#each lodgingTypes as lodgingType}
 								<option value={lodgingType}>{lodgingType}</option>

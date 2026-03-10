@@ -796,7 +796,7 @@
 											type="text"
 											bind:value={user.username}
 											name="username"
-											class="input input-bordered input-primary focus:input-primary"
+											class="input input-primary focus:input-primary"
 											placeholder={$t('settings.enter_username')}
 										/>
 									</div>
@@ -810,7 +810,7 @@
 											type="text"
 											bind:value={user.first_name}
 											name="first_name"
-											class="input input-bordered input-primary focus:input-primary"
+											class="input input-primary focus:input-primary"
 											placeholder={$t('settings.enter_first_name')}
 										/>
 									</div>
@@ -824,7 +824,7 @@
 											type="text"
 											bind:value={user.last_name}
 											name="last_name"
-											class="input input-bordered input-primary focus:input-primary"
+											class="input input-primary focus:input-primary"
 											placeholder={$t('settings.enter_last_name')}
 										/>
 									</div>
@@ -837,7 +837,7 @@
 										<input
 											type="file"
 											name="profile_pic"
-											class="file-input file-input-bordered file-input-primary"
+											class="file-input file-input-primary"
 											accept="image/*"
 										/>
 									</div>
@@ -887,7 +887,7 @@
 										<select
 											id="default_currency"
 											name="default_currency"
-											class="select select-bordered select-primary w-full"
+											class="select select-primary w-full"
 											bind:value={user.default_currency}
 										>
 											{#each CURRENCY_OPTIONS as code}
@@ -941,7 +941,7 @@
 											<input
 												type="password"
 												name="current_password"
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder={$t('settings.enter_current_password')}
 											/>
 										</div>
@@ -956,7 +956,7 @@
 											<input
 												type="password"
 												name="password1"
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder={$t('settings.enter_new_password')}
 											/>
 										</div>
@@ -971,7 +971,7 @@
 											<input
 												type="password"
 												name="password2"
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder={$t('settings.confirm_new_password')}
 											/>
 										</div>
@@ -1253,7 +1253,7 @@
 									<input
 										type="email"
 										bind:value={new_email}
-										class="input input-bordered input-primary focus:input-primary"
+										class="input input-primary focus:input-primary"
 										placeholder={$t('settings.enter_new_email')}
 										required
 									/>
@@ -1321,7 +1321,7 @@
 											<input
 												type="url"
 												bind:value={newImmichIntegration.server_url}
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder="https://immich.example.com/api"
 											/>
 											{#if newImmichIntegration.server_url && !newImmichIntegration.server_url.endsWith('api')}
@@ -1346,7 +1346,7 @@
 											<input
 												type="password"
 												bind:value={newImmichIntegration.api_key}
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder={$t('immich.api_key_placeholder')}
 											/>
 										</div>
@@ -1518,7 +1518,7 @@
 											</label>
 											<input
 												type="password"
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder="Enter your password"
 												bind:value={newWandererIntegration.password}
 											/>
@@ -1541,7 +1541,7 @@
 											</label>
 											<input
 												type="url"
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder="https://wanderer.example.com"
 												bind:value={newWandererIntegration.server_url}
 											/>
@@ -1554,7 +1554,7 @@
 											</label>
 											<input
 												type="text"
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder="Enter your username"
 												bind:value={newWandererIntegration.username}
 											/>
@@ -1567,7 +1567,7 @@
 											</label>
 											<input
 												type="password"
-												class="input input-bordered input-primary focus:input-primary"
+												class="input input-primary focus:input-primary"
 												placeholder="Enter your password"
 												bind:value={newWandererIntegration.password}
 											/>
@@ -1694,7 +1694,7 @@
 											</label>
 											<select
 												id="default-ai-provider"
-												class="select select-bordered select-primary w-full"
+												class="select select-primary w-full"
 												bind:value={defaultAiProvider}
 												on:change={onDefaultAiProviderChange}
 											>
@@ -1710,7 +1710,7 @@
 											</label>
 											<select
 												id="default-ai-model"
-												class="select select-bordered select-primary w-full"
+												class="select select-primary w-full"
 												bind:value={defaultAiModel}
 												disabled={defaultAiModelsLoading}
 											>
@@ -1816,7 +1816,7 @@
 										</label>
 										<select
 											id="api-key-provider"
-											class="select select-bordered select-primary w-full"
+											class="select select-primary w-full"
 											bind:value={newApiKeyProvider}
 											disabled={providerCatalog.length === 0}
 										>
@@ -1832,7 +1832,7 @@
 										<input
 											id="api-key-value"
 											type="password"
-											class="input input-bordered input-primary focus:input-primary"
+											class="input input-primary focus:input-primary"
 											bind:value={newApiKeyValue}
 											placeholder={$t('settings.api_key_value_placeholder')}
 											required
@@ -1996,7 +1996,7 @@
 												type="file"
 												name="file"
 												id="backup-file"
-												class="file-input file-input-bordered file-input-primary w-full"
+												class="file-input file-input-primary w-full"
 												accept=".zip"
 												required
 											/>

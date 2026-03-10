@@ -414,14 +414,14 @@
 							<input
 								type="text"
 								bind:value={trailName}
-								class="input input-bordered"
+								class="input"
 								placeholder="Trail name"
 								disabled={isTrailLoading}
 							/>
 							<input
 								type="url"
 								bind:value={trailLink}
-								class="input input-bordered"
+								class="input"
 								placeholder={$t('adventures.external_link') + ' (AllTrails, Trailforks, etc.)'}
 								disabled={isTrailLoading}
 							/>
@@ -466,7 +466,7 @@
 									<input
 										type="text"
 										placeholder={$t('adventures.search_trails_placeholder') + '...'}
-										class="input input-bordered w-full pr-20"
+										class="input w-full pr-20"
 										bind:value={searchQuery}
 										on:input={debouncedSearch}
 										on:keydown={(e) => e.key === 'Enter' && handleSearch()}
@@ -563,13 +563,13 @@
 											<input
 												type="text"
 												bind:value={editingTrailName}
-												class="input input-bordered input-sm"
+												class="input input-sm"
 												placeholder={$t('adventures.trail_name')}
 											/>
 											<input
 												type="url"
 												bind:value={editingTrailLink}
-												class="input input-bordered input-sm"
+												class="input input-sm"
 												placeholder={$t('adventures.external_link')}
 												disabled={editingTrailWandererId.trim() !== ''}
 											/>

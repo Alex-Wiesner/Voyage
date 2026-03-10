@@ -220,7 +220,7 @@
 					<input
 						type="file"
 						bind:this={attachmentFileInput}
-						class="file-input file-input-bordered col-span-2 md:col-span-1"
+						class="file-input col-span-2 md:col-span-1"
 						accept={allowedFileTypes.join(',')}
 						disabled={isAttachmentLoading}
 						on:change={handleAttachmentFileChange}
@@ -228,7 +228,7 @@
 					<input
 						type="text"
 						bind:value={attachmentName}
-						class="input input-bordered"
+						class="input"
 						placeholder={$t('adventures.attachment_name')}
 						disabled={isAttachmentLoading}
 					/>
@@ -268,7 +268,7 @@
 								<input
 									type="text"
 									bind:value={editingAttachmentName}
-									class="input input-bordered input-sm w-full mb-3"
+									class="input input-sm w-full mb-3"
 									placeholder="Attachment name"
 								/>
 								<div class="flex gap-2">

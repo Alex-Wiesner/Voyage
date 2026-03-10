@@ -532,7 +532,7 @@
 					<!-- Controls -->
 					<div class="mt-4 flex flex-wrap items-center gap-4">
 						<!-- Search Bar -->
-						<label class="input input-bordered input-sm flex items-center gap-2 flex-1 max-w-md">
+						<label class="input input-sm flex items-center gap-2 flex-1 max-w-md">
 							<SearchIcon class="h-4 w-4 opacity-70" />
 							<input
 								type="text"

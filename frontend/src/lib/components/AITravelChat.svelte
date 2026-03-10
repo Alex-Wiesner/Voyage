@@ -823,7 +823,7 @@
 									</label>
 									<select
 										id="chat-provider-select"
-										class="select select-bordered select-sm w-full"
+										class="select select-sm w-full"
 										bind:value={selectedProvider}
 										disabled={chatProviders.length === 0}
 									>
@@ -840,7 +840,7 @@
 									</label>
 									<select
 										id="chat-model-select"
-										class="select select-bordered select-sm w-full"
+										class="select select-sm w-full"
 										bind:value={selectedModel}
 										disabled={chatProviders.length === 0}
 									>
@@ -1020,7 +1020,7 @@
 						</div>
 						<div class="flex items-end gap-2" class:mx-auto={!embedded} class:max-w-4xl={!embedded}>
 							<textarea
-								class="textarea textarea-bordered flex-1 resize-none"
+								class="textarea flex-1 resize-none"
 								placeholder={$t('chat.input_placeholder')}
 								bind:value={inputMessage}
 								on:keydown={handleKeydown}
@@ -1059,7 +1059,7 @@
 
 			<input
 				type="date"
-				class="input input-bordered w-full"
+				class="input w-full"
 				bind:value={selectedDate}
 				min={startDate}
 				max={endDate}

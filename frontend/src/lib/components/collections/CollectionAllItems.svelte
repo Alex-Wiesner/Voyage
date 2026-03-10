@@ -174,13 +174,13 @@
 								<input
 									type="text"
 									placeholder="Search locations..."
-									class="input input-sm input-bordered join-item w-48"
+									class="input input-sm join-item w-48"
 									bind:value={locationSearch}
 								/>
 							</div>
 
 							<!-- Sort dropdown -->
-							<select class="select select-sm select-bordered" bind:value={locationSort}>
+							<select class="select select-sm" bind:value={locationSort}>
 								<option value="alphabetical-asc">A → Z</option>
 								<option value="alphabetical-desc">Z → A</option>
 								<option value="visited">Visited First</option>
@@ -230,7 +230,7 @@
 							<input
 								type="text"
 								placeholder="Search transportation..."
-								class="input input-sm input-bordered join-item w-48"
+								class="input input-sm join-item w-48"
 								bind:value={transportationSearch}
 							/>
 							<button class="btn btn-sm btn-square join-item">
@@ -278,7 +278,7 @@
 							<input
 								type="text"
 								placeholder="Search lodging..."
-								class="input input-sm input-bordered join-item w-48"
+								class="input input-sm join-item w-48"
 								bind:value={lodgingSearch}
 							/>
 							<button class="btn btn-sm btn-square join-item">
@@ -325,7 +325,7 @@
 							<input
 								type="text"
 								placeholder="Search notes..."
-								class="input input-sm input-bordered join-item w-48"
+								class="input input-sm join-item w-48"
 								bind:value={noteSearch}
 							/>
 							<button class="btn btn-sm btn-square join-item">
@@ -373,7 +373,7 @@
 							<input
 								type="text"
 								placeholder="Search checklists..."
-								class="input input-sm input-bordered join-item w-48"
+								class="input input-sm join-item w-48"
 								bind:value={checklistSearch}
 							/>
 							<button class="btn btn-sm btn-square join-item">
