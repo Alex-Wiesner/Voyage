@@ -46,7 +46,6 @@
 		"dompurify": "^3.3.2",
 		"emoji-picker-element": "^1.29.1",
 		"gsap": "^3.14.2",
-		"lucide-svelte": "^0.577.0",
 		"luxon": "^3.7.2",
 		"marked": "^15.0.12",
 		"psl": "^1.15.0",

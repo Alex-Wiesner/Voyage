@@ -316,7 +316,7 @@
 								<span class="hidden sm:inline">{$t('worldtravel.hide_map')}</span>
 							{:else}
 								<Map class="w-4 h-4" />
-							<span class="hidden sm:inline">{$t('worldtravel.show_map')}</span>
+								<span class="hidden sm:inline">{$t('worldtravel.show_map')}</span>
 							{/if}
 						</button>
 					</div>
