@@ -198,6 +198,27 @@ class ChatViewSet(viewsets.ModelViewSet):
             "activities, or lodging."
         )
 
+    @staticmethod
+    def _is_likely_location_reply(user_content):
+        if not isinstance(user_content, str):
+            return False
+
+        normalized = user_content.strip()
+        if not normalized:
+            return False
+
+        if normalized.endswith("?"):
+            return False
+
+        if len(normalized) > 80:
+            return False
+
+        parts = normalized.split()
+        if len(parts) > 6:
+            return False
+
+        return bool(re.search(r"[a-z0-9]", normalized, re.IGNORECASE))
+
     @action(detail=True, methods=["post"])
     def send_message(self, request, pk=None):
         # Auto-learn preferences from user's travel history
@@ -412,6 +433,34 @@ class ChatViewSet(viewsets.ModelViewSet):
                             **arguments,
                         )
 
+                        tool_call_for_history = tool_call
+
+                        if self._is_search_places_missing_location_required_error(
+                            function_name,
+                            result,
+                        ) and self._is_likely_location_reply(user_content):
+                            retry_arguments = dict(arguments)
+                            retry_arguments["location"] = user_content
+                            retry_result = await sync_to_async(
+                                execute_tool,
+                                thread_sensitive=True,
+                            )(
+                                function_name,
+                                request.user,
+                                **retry_arguments,
+                            )
+
+                            if not self._is_required_param_tool_error(retry_result):
+                                result = retry_result
+                                tool_call_for_history = {
+                                    **tool_call,
+                                    "function": {
+                                        **function_payload,
+                                        "name": function_name,
+                                        "arguments": json.dumps(retry_arguments),
+                                    },
+                                }
+
                         if self._is_required_param_tool_error(result):
                             assistant_message_kwargs = {
                                 "conversation": conversation,
@@ -480,19 +529,19 @@ class ChatViewSet(viewsets.ModelViewSet):
 
                         result_content = serialize_tool_result(result)
 
-                        successful_tool_calls.append(tool_call)
+                        successful_tool_calls.append(tool_call_for_history)
                         tool_message_payload = {
                             "conversation": conversation,
                             "role": "tool",
                             "content": result_content,
-                            "tool_call_id": tool_call.get("id"),
+                            "tool_call_id": tool_call_for_history.get("id"),
                             "name": function_name,
                         }
                         successful_tool_messages.append(tool_message_payload)
                         successful_tool_chat_entries.append(
                             {
                                 "role": "tool",
-                                "tool_call_id": tool_call.get("id"),
+                                "tool_call_id": tool_call_for_history.get("id"),
                                 "name": function_name,
                                 "content": result_content,
                             }
@@ -500,7 +549,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
                         tool_event = {
                             "tool_result": {
-                                "tool_call_id": tool_call.get("id"),
+                                "tool_call_id": tool_call_for_history.get("id"),
                                 "name": function_name,
                                 "result": result,
                             }

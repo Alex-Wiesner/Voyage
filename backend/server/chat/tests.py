@@ -164,6 +164,19 @@ class ChatViewSetToolValidationBoundaryTests(TestCase):
             )
         )
 
+    def test_likely_location_reply_heuristic_positive_case(self):
+        self.assertTrue(ChatViewSet._is_likely_location_reply("london"))
+
+    def test_likely_location_reply_heuristic_negative_question(self):
+        self.assertFalse(ChatViewSet._is_likely_location_reply("where should I go?"))
+
+    def test_likely_location_reply_heuristic_negative_long_sentence(self):
+        self.assertFalse(
+            ChatViewSet._is_likely_location_reply(
+                "I am not sure what city yet, maybe something with beaches and nice museums"
+            )
+        )
+
 
 class ChatViewSetSearchPlacesClarificationTests(APITransactionTestCase):
     @patch("chat.views.execute_tool")
@@ -242,3 +255,95 @@ class ChatViewSetSearchPlacesClarificationTests(APITransactionTestCase):
         )
         self.assertIsNotNone(clarifying_message)
         self.assertIn("specific location", clarifying_message.content.lower())
+
+    @patch("chat.views.execute_tool")
+    @patch("chat.views.stream_chat_completion")
+    @patch("integrations.utils.auto_profile.update_auto_preference_profile")
+    def test_missing_location_retry_uses_user_reply_and_avoids_clarification_loop(
+        self,
+        _mock_auto_profile,
+        mock_stream_chat_completion,
+        mock_execute_tool,
+    ):
+        user = User.objects.create_user(
+            username="chat-location-retry-user",
+            email="chat-location-retry-user@example.com",
+            password="password123",
+        )
+        self.client.force_authenticate(user=user)
+
+        conversation_response = self.client.post(
+            "/api/chat/conversations/",
+            {"title": "Location Retry Test"},
+            format="json",
+        )
+        self.assertEqual(conversation_response.status_code, 201)
+        conversation_id = conversation_response.json()["id"]
+
+        async def first_stream(*args, **kwargs):
+            yield 'data: {"tool_calls": [{"index": 0, "id": "call_1", "type": "function", "function": {"name": "search_places", "arguments": "{}"}}]}\n\n'
+            yield "data: [DONE]\n\n"
+
+        async def second_stream(*args, **kwargs):
+            yield 'data: {"content": "Great, here are top spots in London."}\n\n'
+            yield "data: [DONE]\n\n"
+
+        mock_stream_chat_completion.side_effect = [first_stream(), second_stream()]
+        mock_execute_tool.side_effect = [
+            {"error": "location is required"},
+            {"results": [{"name": "British Museum"}]},
+        ]
+
+        response = self.client.post(
+            f"/api/chat/conversations/{conversation_id}/send_message/",
+            {"message": "london"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        chunks = [
+            chunk.decode("utf-8")
+            if isinstance(chunk, (bytes, bytearray))
+            else str(chunk)
+            for chunk in response.streaming_content
+        ]
+        payload_lines = [
+            chunk.strip()[len("data: ") :]
+            for chunk in chunks
+            if chunk.strip().startswith("data: ")
+        ]
+        json_payloads = [
+            json.loads(payload) for payload in payload_lines if payload != "[DONE]"
+        ]
+
+        self.assertTrue(any("tool_result" in payload for payload in json_payloads))
+        self.assertTrue(
+            any(
+                payload.get("content") == "Great, here are top spots in London."
+                for payload in json_payloads
+            )
+        )
+        self.assertFalse(
+            any(
+                "specific location" in payload.get("content", "").lower()
+                for payload in json_payloads
+            )
+        )
+        self.assertFalse(
+            any(payload.get("error_category") for payload in json_payloads)
+        )
+
+        self.assertEqual(mock_execute_tool.call_count, 2)
+        self.assertEqual(
+            mock_execute_tool.call_args_list[1].kwargs.get("location"), "london"
+        )
+
+        assistant_messages = user.chat_conversations.get(
+            id=conversation_id
+        ).messages.filter(role="assistant")
+        self.assertFalse(
+            any(
+                "specific location" in message.content.lower()
+                for message in assistant_messages
+            )
+        )
