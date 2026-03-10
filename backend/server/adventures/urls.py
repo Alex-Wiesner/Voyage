@@ -18,11 +18,6 @@ router.register(r"ics-calendar", IcsCalendarGeneratorViewSet, basename="ics-cale
 router.register(r"search", GlobalSearchView, basename="search")
 router.register(r"attachments", AttachmentViewSet, basename="attachments")
 router.register(r"lodging", LodgingViewSet, basename="lodging")
-(
-    router.register(
-        r"recommendations", RecommendationsViewSet, basename="recommendations"
-    ),
-)
 router.register(r"backup", BackupViewSet, basename="backup")
 router.register(r"trails", TrailViewSet, basename="trails")
 router.register(r"activities", ActivityViewSet, basename="activities")

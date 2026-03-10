@@ -526,46 +526,6 @@ export type Pin = {
 	category: Category | null;
 };
 
-export type Recommendation = {
-	id: string;
-	external_id: string;
-	source: 'google' | 'osm';
-	name: string;
-	description: string | null;
-	latitude: number;
-	longitude: number;
-	address: string | null;
-	distance_km: number;
-	rating: number | null;
-	review_count: number | null;
-	price_level: string | null;
-	types: string[];
-	primary_type: string | null;
-	business_status: string | null;
-	is_open_now: boolean | null;
-	opening_hours: string[] | null;
-	phone_number: string | null;
-	website: string | null;
-	google_maps_url: string | null;
-	photos: string[];
-	is_verified: boolean;
-	quality_score: number;
-	// OSM-specific fields
-	osm_type?: string;
-	wikipedia?: string;
-	stars?: string;
-};
-
-export type RecommendationResponse = {
-	count: number;
-	results: Recommendation[];
-	sources_used: {
-		google: number;
-		osm: number;
-		total_before_dedup: number;
-	};
-};
-
 export type ChatProviderCatalogEntry = {
 	id: string;
 	label: string;

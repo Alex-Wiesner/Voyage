@@ -25,19 +25,18 @@
 	import ImageDisplayModal from '$lib/components/ImageDisplayModal.svelte';
 	import CollectionAllItems from '$lib/components/collections/CollectionAllItems.svelte';
 	import CollectionItineraryPlanner from '$lib/components/collections/CollectionItineraryPlanner.svelte';
-	import CollectionRecommendationView from '$lib/components/CollectionRecommendationView.svelte';
 	import AITravelChat from '$lib/components/AITravelChat.svelte';
 	import CollectionMap from '$lib/components/collections/CollectionMap.svelte';
 	import CollectionStats from '$lib/components/collections/CollectionStats.svelte';
 	import LocationLink from '$lib/components/LocationLink.svelte';
-	import { MessageCircle, X } from 'lucide-svelte';
+	import MessageCircle from '~icons/mdi/message-text-outline';
+	import X from '~icons/mdi/close';
 	import { getBasemapUrl } from '$lib';
 	import { formatMoney, toMoneyValue, DEFAULT_CURRENCY } from '$lib/money';
 	import FolderMultiple from '~icons/mdi/folder-multiple';
 	import FormatListBulleted from '~icons/mdi/format-list-bulleted';
 	import Timeline from '~icons/mdi/timeline';
 	import MapIcon from '~icons/mdi/map';
-	import Lightbulb from '~icons/mdi/lightbulb';
 	import ChartBar from '~icons/mdi/chart-bar';
 	import Plus from '~icons/mdi/plus';
 	import { addToast } from '$lib/toasts';
@@ -206,7 +205,7 @@
 	}
 
 	// View state from URL params
-	type ViewType = 'all' | 'itinerary' | 'map' | 'calendar' | 'recommendations' | 'stats';
+	type ViewType = 'all' | 'itinerary' | 'map' | 'calendar' | 'stats';
 	let currentView: ViewType = 'itinerary';
 	let chatPanelOpen = false;
 	let innerWidth = 1024;
@@ -243,7 +242,6 @@
 			) ||
 			false,
 		calendar: !isFolderView,
-		recommendations: true, // may be overridden by permission check below
 		stats: true
 	};
 
@@ -256,7 +254,7 @@
 		const view = $page.url.searchParams.get('view') as ViewType;
 		if (
 			view &&
-			['all', 'itinerary', 'map', 'calendar', 'recommendations', 'stats'].includes(view) &&
+			['all', 'itinerary', 'map', 'calendar', 'stats'].includes(view) &&
 			availableViews[view]
 		) {
 			currentView = view;
@@ -289,9 +287,6 @@
 
 		return false;
 	})();
-
-	// Enforce recommendations visibility only for owner/shared users
-	$: availableViews.recommendations = !!canModifyCollection;
 
 	$: if (!canModifyCollection && chatPanelOpen) {
 		chatPanelOpen = false;
@@ -1225,16 +1220,6 @@
 							<span class="hidden sm:inline">{$t('navbar.calendar')}</span>
 						</button>
 					{/if}
-					{#if availableViews.recommendations}
-						<button
-							class="btn join-item"
-							class:btn-active={currentView === 'recommendations'}
-							on:click={() => switchView('recommendations')}
-						>
-							<Lightbulb class="w-5 h-5 sm:mr-2" aria-hidden="true" />
-							<span class="hidden sm:inline">{$t('recomendations.recommendations')}</span>
-						</button>
-					{/if}
 					{#if availableViews.stats}
 						<button
 							class="btn join-item"
@@ -1376,13 +1361,6 @@
 									</div>
 								</div>
 							{/if}
-						{/if}
-
-						<!-- Recommendations View -->
-						{#if currentView === 'recommendations'}
-							<div class="space-y-8">
-								<CollectionRecommendationView bind:collection user={data.user} />
-							</div>
 						{/if}
 					</div>
 

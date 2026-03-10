@@ -124,28 +124,6 @@ class WeatherViewTests(APITestCase):
         self.assertEqual(response.json()["results"][0]["temperature_c"], 15.0)
 
 
-class RecommendationPhotoProxyValidationTests(APITestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            username="reco-user",
-            email="reco@example.com",
-            password="password123",
-        )
-        self.client.force_authenticate(user=self.user)
-
-    def test_google_photo_rejects_invalid_photo_name(self):
-        response = self.client.get(
-            "/api/recommendations/google-photo/?photo_name=invalid-photo-name"
-        )
-        self.assertEqual(response.status_code, 400)
-
-    def test_google_photo_rejects_trailing_newline_photo_name(self):
-        response = self.client.get(
-            "/api/recommendations/google-photo/?photo_name=places/abc/photos/def%0A"
-        )
-        self.assertEqual(response.status_code, 400)
-
-
 class MCPAuthTests(APITestCase):
     def test_mcp_unauthenticated_access_is_rejected(self):
         unauthenticated_client = APIClient()
