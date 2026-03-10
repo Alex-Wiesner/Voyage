@@ -19,7 +19,8 @@ Voyage is **pre-release** — not yet in production use. During pre-release:
 
 ## Architecture Overview
 - **API proxy pattern**: Frontend never calls Django directly. All API calls go through `frontend/src/routes/api/[...path]/+server.ts`, which proxies to `http://server:8000`, handles cookies, and injects CSRF behavior.
-- **AI chat**: Embedded in Collections → Recommendations via `AITravelChat.svelte` component. No standalone `/chat` route. Provider list is dynamic from backend `GET /api/chat/providers/` (sourced from LiteLLM runtime + custom entries like `opencode_zen`). Chat conversations use SSE streaming via `/api/chat/conversations/`. Default AI provider/model saved via `UserAISettings` in DB (authoritative over browser localStorage). LiteLLM errors are mapped to sanitized user-safe messages via `_safe_error_payload()` (never exposes raw exception text). Invalid tool calls (missing required args) are detected and short-circuited with a user-visible error — not replayed into history. Chat agent tools (`get_trip_details`, `add_to_itinerary`) respect collection sharing — both owners and `shared_with` members can use them; `list_trips` remains owner-only.
+- **AI chat**: Docked side panel (desktop drawer-end) / slide-over (mobile) on the itinerary page via `AITravelChat.svelte`. No standalone `/chat` route; no recommendations view. Chat persists across tab switches and page refreshes via localStorage. Permission-gated by `canModifyCollection`. Provider list is dynamic from backend `GET /api/chat/providers/` (sourced from LiteLLM runtime + custom entries like `opencode_zen`). Chat conversations use SSE streaming via `/api/chat/conversations/`. Default AI provider/model saved via `UserAISettings` in DB (authoritative over browser localStorage). LiteLLM errors are mapped to sanitized user-safe messages via `_safe_error_payload()` (never exposes raw exception text). Invalid tool calls (missing required args) are detected and short-circuited with a user-visible error — not replayed into history. Chat agent tools (`get_trip_details`, `add_to_itinerary`) respect collection sharing — both owners and `shared_with` members can use them; `list_trips` remains owner-only.
+- **Admin-editable system prompt**: `ChatSystemPrompt` singleton model in Django admin. Admins/hosters can edit the base system prompt at runtime without rebuilding Docker images. Falls back to hardcoded default when no DB row exists. Dynamic user/party preference injection is preserved on top of the admin-editable base.
 - **Service ports**:
   - `web` → `:8015`
   - `server` → `:8016`
@@ -62,14 +63,15 @@ Run in this order:
 4. `cd frontend && bun run build`
 
 ## Known Issues (Expected)
-- Frontend `bun run check`: **0 errors + 6 warnings** expected (pre-existing in `CollectionRecommendationView.svelte` + `RegionCard.svelte`)
-- Backend tests: **6/39 fail** (pre-existing: 2 user email key errors + 4 geocoding API mocks; 32 chat tests all pass)
+- Frontend `bun run check`: **0 errors + 1 warning** expected (pre-existing in `RegionCard.svelte`)
+- Backend tests: **6/41 fail** (pre-existing: 2 user email key errors + 4 geocoding API mocks; 41 chat tests all pass)
 - Docker dev setup has frontend-backend communication issues (500 errors beyond homepage)
 
 ## Key Patterns
-- i18n: use `$t('key')` for user-facing strings
+- i18n: use `$t('key')` for user-facing strings; new key `chat.travel_assistant` for the AI chat panel title
 - API calls: route through proxy at `/api/[...path]/+server.ts`
 - Styling: use DaisyUI semantic colors/classes (`bg-primary`, `text-base-content`, etc.)
+- Icons: use `~icons/mdi/` pattern (e.g. `import ChatIcon from '~icons/mdi/chat-outline'`); do NOT use `lucide-svelte`
 - Security: handle CSRF tokens via `/auth/csrf/` and `X-CSRFToken`
 - Chat providers: dynamic catalog from `GET /api/chat/providers/`; configured in `CHAT_PROVIDER_CONFIG`
 - Chat model override: dropdown selector fed by `GET /api/chat/providers/{provider}/models/`; persisted in `localStorage` key `voyage_chat_model_prefs`; backend accepts optional `model` param in `send_message`
