@@ -1,17 +1,17 @@
 # Use the official Bun image as the build platform (supports linux/amd64 and linux/arm64 natively)
 FROM oven/bun:1.2.22-alpine AS builder
 
-# Metadata labels for the AdventureLog image
-LABEL maintainer="Sean Morley" \
+# Metadata labels for the Voyage image
+LABEL maintainer="Voyage contributors" \
       version="v0.12.0" \
-      description="AdventureLog — the ultimate self-hosted travel companion." \
-      org.opencontainers.image.title="AdventureLog" \
-      org.opencontainers.image.description="AdventureLog is a self-hosted travel companion that helps you plan, track, and share your adventures." \
+      description="Voyage — the ultimate self-hosted travel companion." \
+      org.opencontainers.image.title="Voyage" \
+      org.opencontainers.image.description="Voyage is a self-hosted travel companion that helps you plan, track, and share your adventures." \
       org.opencontainers.image.version="v0.12.0" \
-      org.opencontainers.image.authors="Sean Morley" \
-      org.opencontainers.image.url="https://raw.githubusercontent.com/seanmorley15/AdventureLog/refs/heads/main/brand/banner.png" \
-      org.opencontainers.image.source="https://github.com/seanmorley15/AdventureLog" \
-      org.opencontainers.image.vendor="Sean Morley" \
+      org.opencontainers.image.authors="Voyage contributors" \
+      org.opencontainers.image.url="https://voyage.app" \
+      org.opencontainers.image.source="https://github.com/Alex-Wiesner/voyage" \
+      org.opencontainers.image.vendor="Voyage contributors" \
       org.opencontainers.image.created="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
       org.opencontainers.image.licenses="GPL-3.0"
 

@@ -1,6 +1,8 @@
-    AdventureLog: Self-hostable travel tracker and trip planner.
+    Voyage: Self-hostable travel tracker and trip planner.
+    Based on AdventureLog by Sean Morley.
     Copyright (C) 2023-2026  Sean Morley
-    Contact: contact@seanmorley.com
+    Additional changes Copyright (C) 2026  Voyage contributors
+    Upstream contact: contact@seanmorley.com
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

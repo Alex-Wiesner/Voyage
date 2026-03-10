@@ -3,7 +3,7 @@ import { defineConfig } from "vitepress";
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   head: [
-    ["link", { rel: "icon", href: "/adventurelog.png" }],
+    ["link", { rel: "icon", href: "/voyage.png" }],
 
     [
       "script",
@@ -13,22 +13,14 @@ export default defineConfig({
         "data-website-id": "a7552764-5a1d-4fe7-80c2-5331e1a53cb6",
       },
     ],
-
-    [
-      "link",
-      {
-        rel: "me",
-        href: "https://mastodon.social/@adventurelog",
-      },
-    ],
   ],
   ignoreDeadLinks: "localhostLinks",
-  title: "AdventureLog",
+  title: "Voyage",
   description: "The ultimate travel companion.",
   lang: "en-US",
 
   sitemap: {
-    hostname: "https://adventurelog.app",
+    hostname: "https://voyage.app",
   },
 
   transformPageData(pageData) {
@@ -36,17 +28,18 @@ export default defineConfig({
       const jsonLd = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        name: "AdventureLog",
-        url: "https://adventurelog.app",
+        name: "Voyage",
+        url: "https://voyage.app",
         applicationCategory: "TravelApplication",
         operatingSystem: "Web, Docker, Linux",
         description:
-          "AdventureLog is a self-hosted platform for tracking and planning travel experiences. Built for modern explorers, it offers trip planning, journaling, tracking and location mapping in one privacy-respecting package.",
+          "Voyage is a self-hosted platform for tracking and planning travel experiences. Built for modern explorers, it offers trip planning, journaling, tracking and location mapping in one privacy-respecting package.",
         creator: {
-          "@type": "Person",
-          name: "Sean Morley",
-          url: "https://seanmorley.com",
+          "@type": "Organization",
+          name: "Voyage contributors",
+          url: "https://github.com/Alex-Wiesner/voyage",
         },
+        isBasedOn: "https://github.com/seanmorley15/AdventureLog",
         offers: {
           "@type": "Offer",
           price: "0.00",
@@ -54,12 +47,11 @@ export default defineConfig({
           description: "Open-source version available for self-hosting.",
         },
         softwareVersion: "v0.12.0",
-        license:
-          "https://github.com/seanmorley15/adventurelog/blob/main/LICENSE",
+        license: "https://github.com/Alex-Wiesner/voyage/blob/main/LICENSE",
         screenshot:
-          "https://raw.githubusercontent.com/seanmorley15/AdventureLog/refs/heads/main/brand/screenshots/adventures.png",
-        downloadUrl: "https://github.com/seanmorley15/adventurelog",
-        sameAs: ["https://github.com/seanmorley15/adventurelog"],
+          "https://raw.githubusercontent.com/Alex-Wiesner/voyage/refs/heads/main/brand/screenshots/adventures.png",
+        downloadUrl: "https://github.com/Alex-Wiesner/voyage",
+        sameAs: ["https://github.com/Alex-Wiesner/voyage"],
         keywords: [
           "self-hosted travel log",
           "open source trip planner",
@@ -67,7 +59,7 @@ export default defineConfig({
           "docker travel diary",
           "map-based travel tracker",
           "privacy-focused travel app",
-          "adventure log software",
+          "voyage travel companion",
           "travel experience tracker",
           "self-hosted travel app",
           "open source travel software",
@@ -96,30 +88,29 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: "Home", link: "/" },
-      { text: "Docs", link: "/docs/intro/adventurelog_overview" },
+      { text: "Docs", link: "/docs/intro/voyage_overview" },
     ],
     search: {
       provider: "local",
     },
     editLink: {
-      pattern:
-        "https://github.com/seanmorley15/AdventureLog/edit/main/documentation/:path",
+      pattern: "https://github.com/Alex-Wiesner/voyage/edit/main/docs/:path",
     },
 
     footer: {
-      message: "AdventureLog",
-      copyright: "Copyright © 2023-2026 Sean Morley",
+      message: "Voyage",
+      copyright: "A fork of AdventureLog by Sean Morley",
     },
 
-    logo: "/adventurelog.png",
+    logo: "/voyage.png",
 
     sidebar: [
       {
-        text: "About AdventureLog",
+        text: "About Voyage",
         items: [
           {
-            text: "AdventureLog Overview",
-            link: "/docs/intro/adventurelog_overview",
+            text: "Voyage Overview",
+            link: "/docs/intro/voyage_overview",
           },
         ],
       },
@@ -162,7 +153,7 @@ export default defineConfig({
         collapsed: false,
         items: [
           {
-            text: "How to use AdventureLog",
+            text: "How to use Voyage",
             link: "/docs/usage/usage",
           },
         ],
@@ -314,12 +305,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: "github", link: "https://github.com/seanmorley15/AdventureLog" },
-      { icon: "discord", link: "https://discord.gg/wRbQ9Egr8C" },
-      { icon: "buymeacoffee", link: "https://buymeacoffee.com/seanmorley15" },
-      { icon: "x", link: "https://x.com/AdventureLogApp" },
-      { icon: "mastodon", link: "https://mastodon.social/@adventurelog" },
-      { icon: "instagram", link: "https://www.instagram.com/adventurelogapp" },
+      { icon: "github", link: "https://github.com/Alex-Wiesner/voyage" },
     ],
   },
 });

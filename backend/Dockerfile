@@ -2,15 +2,15 @@
 FROM python:3.13-slim AS builder
 
 # Metadata labels
-LABEL maintainer="Sean Morley" \
+LABEL maintainer="Voyage contributors" \
       version="0.10.0" \
-      description="AdventureLog — the ultimate self-hosted travel companion." \
-      org.opencontainers.image.title="AdventureLog" \
-      org.opencontainers.image.description="AdventureLog helps you plan, track, and share your adventures." \
+      description="Voyage — the ultimate self-hosted travel companion." \
+      org.opencontainers.image.title="Voyage" \
+      org.opencontainers.image.description="Voyage helps you plan, track, and share your adventures." \
       org.opencontainers.image.version="0.10.0" \
-      org.opencontainers.image.authors="Sean Morley" \
-      org.opencontainers.image.source="https://github.com/seanmorley15/AdventureLog" \
-      org.opencontainers.image.vendor="Sean Morley" \
+      org.opencontainers.image.authors="Voyage contributors" \
+      org.opencontainers.image.source="https://github.com/Alex-Wiesner/voyage" \
+      org.opencontainers.image.vendor="Voyage contributors" \
       org.opencontainers.image.licenses="GPL-3.0"
 
 ENV PYTHONDONTWRITEBYTECODE=1

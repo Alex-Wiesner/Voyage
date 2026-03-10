@@ -149,7 +149,7 @@ The Voyage Roadmap can be found in [GitHub Issues](https://github.com/Alex-Wiesn
 
 Contributions are always welcome!
 
-See `contributing.md` for ways to get started.
+See `CONTRIBUTING.md` for ways to get started.
 
 ### Pre-upgrade backup
 
@@ -179,15 +179,15 @@ Voyage is available on [Weblate](https://hosted.weblate.org/projects/voyage/). I
 
 ## 📃 License
 
-Distributed under the GNU General Public License v3.0. See `LICENSE` for more information.
+Voyage remains distributed under the GNU General Public License v3.0. See `LICENSE` for more information.
 
 <!-- Contact -->
 
 ## 🤝 Contact
 
-Sean Morley - [website](https://seanmorley.com)
+For Voyage-specific questions, bug reports, or feature requests, please use [GitHub Issues](https://github.com/Alex-Wiesner/voyage/issues).
 
-Hi! I'm Sean, the creator of Voyage. I'm a college student and software developer with a passion for travel and adventure. I created Voyage to help people like me document their adventures and plan new ones effortlessly. As a student, I am always looking for more opportunities to learn and grow, so feel free to reach out via the contact on my website if you would like to collaborate or chat!
+AdventureLog was originally created by [Sean Morley](https://seanmorley.com). If you are looking for the upstream project, see [AdventureLog on GitHub](https://github.com/seanmorley15/AdventureLog).
 
 <!-- Acknowledgments -->
 
