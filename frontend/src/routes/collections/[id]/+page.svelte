@@ -209,7 +209,7 @@
 	type ViewType = 'all' | 'itinerary' | 'map' | 'calendar' | 'recommendations' | 'stats';
 	let currentView: ViewType = 'itinerary';
 	let chatPanelOpen = false;
-	let innerWidth = 0;
+	let innerWidth = 1024;
 
 	// Determine if this is a folder view (no dates) or itinerary view (has dates)
 	$: isFolderView = !collection?.start_date && !collection?.end_date;
@@ -292,6 +292,10 @@
 
 	// Enforce recommendations visibility only for owner/shared users
 	$: availableViews.recommendations = !!canModifyCollection;
+
+	$: if (!canModifyCollection && chatPanelOpen) {
+		chatPanelOpen = false;
+	}
 
 	function deriveCollectionDestination(current: Collection | null): string | undefined {
 		if (!current?.locations?.length) {
@@ -766,6 +770,12 @@
 		isImageModalOpen = true;
 	}
 
+	function handleImageKeydown(event: KeyboardEvent, imageIndex: number) {
+		if (event.key === 'Enter') {
+			openImageModal(imageIndex);
+		}
+	}
+
 	function formatDate(dateString: string | null) {
 		if (!dateString) return '';
 		return DateTime.fromISO(dateString).toLocaleString(DateTime.DATE_MED, { locale: 'en-GB' });
@@ -1236,19 +1246,24 @@
 						</button>
 					{/if}
 				</div>
-				<button
-					class="btn btn-primary btn-sm gap-2 ml-4"
-					class:btn-outline={!chatPanelOpen}
-					on:click={() => (chatPanelOpen = !chatPanelOpen)}
-					title={$t('chat.travel_assistant')}
-				>
-					<MessageCircle class="w-4 h-4" />
-					<span class="hidden sm:inline">{$t('chat.travel_assistant')}</span>
-				</button>
+				{#if canModifyCollection}
+					<button
+						class="btn btn-primary btn-sm gap-2 ml-4"
+						class:btn-outline={!chatPanelOpen}
+						on:click={() => (chatPanelOpen = !chatPanelOpen)}
+						title={$t('chat.travel_assistant')}
+					>
+						<MessageCircle class="w-4 h-4" />
+						<span class="hidden sm:inline">{$t('chat.travel_assistant')}</span>
+					</button>
+				{/if}
 			</div>
 		</div>
 
-		<div class="drawer drawer-end" class:drawer-open={chatPanelOpen && innerWidth >= 1024}>
+		<div
+			class="drawer drawer-end"
+			class:drawer-open={canModifyCollection && chatPanelOpen && innerWidth >= 1024}
+		>
 			<input
 				id="collection-chat-drawer"
 				type="checkbox"
@@ -1259,7 +1274,7 @@
 			<div class="drawer-content">
 				<div class="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-10">
 					<!-- Left Column - Main Content -->
-					<div class="lg:col-span-3 space-y-8 sm:space-y-10">
+					<div class="{chatPanelOpen ? 'lg:col-span-4' : 'lg:col-span-3'} space-y-8 sm:space-y-10">
 						<!-- Description Card (always visible) -->
 						{#if collection.description}
 							<div class="card bg-base-200 shadow-xl">
@@ -1366,15 +1381,6 @@
 						<!-- Recommendations View -->
 						{#if currentView === 'recommendations'}
 							<div class="space-y-8">
-								<AITravelChat
-									embedded={true}
-									collectionId={collection.id}
-									collectionName={collection.name}
-									startDate={collection.start_date || undefined}
-									endDate={collection.end_date || undefined}
-									destination={collectionDestination}
-									on:itemAdded={handleAssistantItemAdded}
-								/>
 								<CollectionRecommendationView bind:collection user={data.user} />
 							</div>
 						{/if}
@@ -1632,7 +1638,7 @@
 														class="aspect-square bg-cover bg-center rounded-lg cursor-pointer transition-transform duration-200 group-hover:scale-105"
 														style="background-image: url({image.image})"
 														on:click={() => openImageModal(index)}
-														on:keydown={(e) => e.key === 'Enter' && openImageModal(index)}
+														on:keydown={(event) => handleImageKeydown(event, index)}
 														role="button"
 														tabindex="0"
 													></div>
@@ -1661,39 +1667,41 @@
 				</div>
 			</div>
 
-			<div class="drawer-side z-40">
-				<label for="collection-chat-drawer" class="drawer-overlay"></label>
-				<div class="bg-base-100 h-full w-full sm:w-96 border-l border-base-300 flex flex-col">
-					<div class="flex items-center justify-between p-3 border-b border-base-300">
-						<h3 class="font-semibold text-sm">{$t('chat.travel_assistant')}</h3>
-						<button
-							class="btn btn-ghost btn-xs btn-circle"
-							on:click={() => (chatPanelOpen = false)}
-						>
-							<X class="w-4 h-4" />
-						</button>
-					</div>
-					<div class="flex-1 overflow-hidden">
-						<AITravelChat
-							embedded={true}
-							panelMode={true}
-							collectionId={collection.id}
-							collectionName={collection.name}
-							startDate={collection.start_date || undefined}
-							endDate={collection.end_date || undefined}
-							destination={collectionDestination}
-							on:itemAdded={handleAssistantItemAdded}
-						/>
+			{#if canModifyCollection}
+				<div class="drawer-side z-40">
+					<label for="collection-chat-drawer" class="drawer-overlay"></label>
+					<div class="bg-base-100 h-full w-full sm:w-96 border-l border-base-300 flex flex-col">
+						<div class="flex items-center justify-between p-3 border-b border-base-300">
+							<h3 class="font-semibold text-sm">{$t('chat.travel_assistant')}</h3>
+							<button
+								class="btn btn-ghost btn-xs btn-circle"
+								on:click={() => (chatPanelOpen = false)}
+							>
+								<X class="w-4 h-4" />
+							</button>
+						</div>
+						<div class="flex-1 overflow-hidden">
+							<AITravelChat
+								embedded={true}
+								panelMode={true}
+								collectionId={collection.id}
+								collectionName={collection.name}
+								startDate={collection.start_date || undefined}
+								endDate={collection.end_date || undefined}
+								destination={collectionDestination}
+								on:itemAdded={handleAssistantItemAdded}
+							/>
+						</div>
 					</div>
 				</div>
-			</div>
+			{/if}
 		</div>
 	</div>
 {/if}
 
 <!-- Floating Action Button (FAB) - Only shown if user can modify collection -->
 {#if collection && canModifyCollection && !collection.is_archived}
-	<div class="fixed bottom-6 right-6 z-[999]">
+	<div class="fixed bottom-6 right-6 {chatPanelOpen ? 'z-30' : 'z-[999]'}">
 		<div class="dropdown dropdown-top dropdown-end">
 			<div
 				tabindex="0"

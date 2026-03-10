@@ -88,7 +88,10 @@
 	}>();
 
 	const MODEL_PREFS_STORAGE_KEY = 'voyage_chat_model_prefs';
-	const ACTIVE_CONV_KEY = 'voyage_active_conversation';
+	const ACTIVE_CONV_FALLBACK_KEY = 'voyage_active_conversation';
+	$: activeConvKey = collectionId
+		? `voyage_active_conversation_${collectionId}`
+		: ACTIVE_CONV_FALLBACK_KEY;
 	$: promptTripContext = collectionName || destination || '';
 
 	onMount(() => {
@@ -138,9 +141,9 @@
 
 		try {
 			if (convId) {
-				window.localStorage.setItem(ACTIVE_CONV_KEY, convId);
+				window.localStorage.setItem(activeConvKey, convId);
 			} else {
-				window.localStorage.removeItem(ACTIVE_CONV_KEY);
+				window.localStorage.removeItem(activeConvKey);
 			}
 		} catch {
 			// ignore localStorage persistence failures
@@ -152,7 +155,7 @@
 			return;
 		}
 
-		const savedId = window.localStorage.getItem(ACTIVE_CONV_KEY);
+		const savedId = window.localStorage.getItem(activeConvKey);
 		if (!savedId) {
 			return;
 		}
