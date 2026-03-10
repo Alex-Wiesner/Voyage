@@ -102,7 +102,8 @@ def _parse_address(tags):
     description=(
         "Search for places of interest near a location. "
         "Required: provide a non-empty 'location' string (city, neighborhood, or address). "
-        "Returns tourist attractions, restaurants, hotels, etc."
+        "Use category='food' for restaurants/dining, category='tourism' for attractions, "
+        "and category='lodging' for hotels/stays."
     ),
     parameters={
         "location": {
@@ -113,7 +114,7 @@ def _parse_address(tags):
         "category": {
             "type": "string",
             "enum": ["tourism", "food", "lodging"],
-            "description": "Category of places",
+            "description": "Place type: food (restaurants/dining), tourism (attractions), lodging (hotels/stays)",
         },
         "radius": {
             "type": "number",

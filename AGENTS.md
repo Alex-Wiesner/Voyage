@@ -67,7 +67,7 @@ Run in this order:
 - Security: handle CSRF tokens via `/auth/csrf/` and `X-CSRFToken`
 - Chat providers: dynamic catalog from `GET /api/chat/providers/`; configured in `CHAT_PROVIDER_CONFIG`
 - Chat model override: dropdown selector fed by `GET /api/chat/providers/{provider}/models/`; persisted in `localStorage` key `voyage_chat_model_prefs`; backend accepts optional `model` param in `send_message`
-- Chat context: collection chats inject collection UUID + multi-stop itinerary context; system prompt guides `get_trip_details`-first reasoning and confirms only before first `add_to_itinerary`; `search_places` prompt guard requires the LLM to have a concrete location string before calling the tool (asks clarifying question otherwise)
+- Chat context: collection chats inject collection UUID + multi-stop itinerary context; system prompt guides `get_trip_details`-first reasoning and confirms only before first `add_to_itinerary`; `search_places` has a deterministic context-retry fallback — when the LLM omits `location`, the backend retries using the trip destination or first itinerary stop before asking the user for clarification; a dining-intent heuristic infers `category="food"` from user messages when the LLM omits category for restaurant/dining requests
 - Chat tool output: `role=tool` messages hidden from display; tool outputs render as concise summaries; persisted tool rows reconstructed on reload via `rebuildConversationMessages()`
 - Chat error surfacing: `_safe_error_payload()` maps LiteLLM exceptions to sanitized user-safe categories (never forwards raw `exc.message`)
 - Invalid tool calls (missing required args) are detected and short-circuited with a user-visible error — not replayed into history
