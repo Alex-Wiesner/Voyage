@@ -1,3 +1,9 @@
+---
+title: traefik
+type: note
+permalink: voyage/docs/docs/install/traefik
+---
+
 # Installation with Traefik
 
 Traefik is a modern HTTP reverse proxy and load balancer that makes deploying microservices easy. It is designed to be simple to use and configure, and it integrates well with Docker.

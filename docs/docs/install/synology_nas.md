@@ -1,3 +1,9 @@
+---
+title: synology_nas
+type: note
+permalink: voyage/docs/docs/install/synology-nas
+---
+
 # Installation on a Synology NAS
 
 Voyage can be deployed on a Synology NAS using Docker. This guide from Marius Hosting will walk you through the process.

@@ -1,3 +1,9 @@
+---
+title: google_maps_integration
+type: note
+permalink: voyage/docs/docs/configuration/google-maps-integration
+---
+
 # Google Maps Integration
 
 To enable Google Maps integration in Voyage, you'll need to create a Google Maps API key. This key allows Voyage to use Google Maps services such as geocoding and location search throughout the application.

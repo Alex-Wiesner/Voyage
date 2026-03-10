@@ -1,3 +1,9 @@
+---
+title: wanderer_integration
+type: note
+permalink: voyage/docs/docs/configuration/wanderer-integration
+---
+
 # Wanderer Integration
 
 [Wanderer](https://wanderer.to) is a self-hosted trail database. Integrating Wanderer with Voyage allows you to import trails directly into your locations, making it easier to plan and track your outdoor adventures.

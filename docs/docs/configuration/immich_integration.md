@@ -1,3 +1,9 @@
+---
+title: immich_integration
+type: note
+permalink: voyage/docs/docs/configuration/immich-integration
+---
+
 # Immich Integration
 
 ### What is Immich?

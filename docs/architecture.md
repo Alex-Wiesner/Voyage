@@ -1,3 +1,9 @@
+---
+title: architecture
+type: note
+permalink: voyage/docs/architecture
+---
+
 # Voyage Architecture
 
 > **Status**: Stub — to be expanded as architecture evolves.

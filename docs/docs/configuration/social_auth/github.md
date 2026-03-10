@@ -1,3 +1,9 @@
+---
+title: github
+type: note
+permalink: voyage/docs/docs/configuration/social-auth/github
+---
+
 # GitHub Social Authentication
 
 Voyage can be configured to use GitHub as an identity provider for social authentication. Users can then log in to Voyage using their GitHub account.
@@ -46,4 +52,3 @@ If a user has an existing Voyage account and wants to link it to their Github ac
 #### What it Should Look Like
 
 ![Authentik Social Auth Configuration](/github_settings.png)
-

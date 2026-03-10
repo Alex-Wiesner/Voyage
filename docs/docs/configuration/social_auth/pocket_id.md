@@ -1,3 +1,9 @@
+---
+title: pocket_id
+type: note
+permalink: voyage/docs/docs/configuration/social-auth/pocket-id
+---
+
 # Pocket ID OIDC Authentication
 
 <img src="https://pocket-id.org/logo.png" alt="Pocket ID Logo" width="400" />

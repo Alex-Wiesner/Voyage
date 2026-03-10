@@ -1,3 +1,9 @@
+---
+title: caddy
+type: note
+permalink: voyage/docs/docs/install/caddy
+---
+
 # Installation with Caddy
 
 Caddy is a modern HTTP reverse proxy. It automatically integrates with Let's Encrypt (or other certificate providers) to generate TLS certificates for your site.

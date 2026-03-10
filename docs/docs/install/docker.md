@@ -1,3 +1,9 @@
+---
+title: docker
+type: note
+permalink: voyage/docs/docs/install/docker
+---
+
 # Docker 🐋
 
 Docker is the preferred way to run Voyage on your local machine. It is a lightweight containerization technology that allows you to run applications in isolated environments called containers.

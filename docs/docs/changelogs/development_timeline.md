@@ -1,3 +1,9 @@
+---
+title: development_timeline
+type: note
+permalink: voyage/docs/docs/changelogs/development-timeline
+---
+
 # Voyage: Development Timeline & Origin Story
 
 By: Sean Morley, Founder & Lead Developer

@@ -1,3 +1,9 @@
+---
+title: updating
+type: note
+permalink: voyage/docs/docs/configuration/updating
+---
+
 # Updating
 
 Updating Voyage when using docker can be quite easy. Run a collections backup before upgrading, then pull the latest version and restart the containers.

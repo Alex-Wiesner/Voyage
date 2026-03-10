@@ -1,3 +1,9 @@
+---
+title: invite_user
+type: note
+permalink: voyage/docs/docs/guides/invite-user
+---
+
 # Invite a User
 
 Voyage allows for admin users to invite new users to create an account via an email invitation.

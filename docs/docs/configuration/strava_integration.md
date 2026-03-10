@@ -1,3 +1,9 @@
+---
+title: strava_integration
+type: note
+permalink: voyage/docs/docs/configuration/strava-integration
+---
+
 # Strava Integration
 
 Strava is a popular platform for athletes to track their activities, share their workouts, and connect with other fitness enthusiasts. Integrating Strava with Voyage allows you to import your Strava activities directly into your vists, making it easier to keep track of your outdoor experiences.

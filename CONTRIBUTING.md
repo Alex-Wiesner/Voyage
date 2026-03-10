@@ -1,3 +1,9 @@
+---
+title: CONTRIBUTING
+type: note
+permalink: voyage/contributing
+---
+
 # Contributing to Voyage
 
 We’re excited to have you contribute to Voyage! To ensure that this community remains welcoming and productive for all users and developers, please follow this simple Code of Conduct.

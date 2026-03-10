@@ -1,3 +1,9 @@
+---
+title: oidc
+type: note
+permalink: voyage/docs/docs/configuration/social-auth/oidc
+---
+
 # OIDC Social Authentication
 
 Voyage can be configured to use OpenID Connect (OIDC) as an identity provider for social authentication. Users can then log in to Voyage using their OIDC account.

@@ -1,3 +1,9 @@
+---
+title: authentik
+type: note
+permalink: voyage/docs/docs/configuration/social-auth/authentik
+---
+
 # Authentik OIDC Authentication
 
 <img src="https://repository-images.githubusercontent.com/230885748/19f01d00-8e26-11eb-9a14-cf0d28a1b68d" alt="Authentik Logo" width="400" />

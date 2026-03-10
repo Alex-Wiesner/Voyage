@@ -1,3 +1,9 @@
+---
+title: kustomize
+type: note
+permalink: voyage/docs/docs/install/kustomize
+---
+
 # Kubernetes and Kustomize (k8s)
 
 _Voyage can be run inside a kubernetes cluster using [kustomize](https://kustomize.io/)._

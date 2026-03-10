@@ -1,3 +1,9 @@
+---
+title: quick_start
+type: note
+permalink: voyage/docs/docs/install/quick-start
+---
+
 # 🚀 Quick Start Install
 
 Install **Voyage** in seconds using our automated script.

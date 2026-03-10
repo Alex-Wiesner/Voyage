@@ -1,3 +1,9 @@
+---
+title: usage
+type: note
+permalink: voyage/docs/docs/usage/usage
+---
+
 # How to use Voyage
 
 Welcome to Voyage! This guide will help you get started with Voyage and provide you with an overview of the features available to you.

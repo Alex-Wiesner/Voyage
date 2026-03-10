@@ -1,3 +1,9 @@
+---
+title: voyage_overview
+type: note
+permalink: voyage/docs/docs/intro/voyage-overview
+---
+
 # About Voyage
 
 > **Voyage is a fork of [AdventureLog](https://github.com/seanmorley15/AdventureLog)**, the open-source travel companion created by [Sean Morley](https://seanmorley.com). Voyage builds on AdventureLog's foundation to make additional changes and improvements.

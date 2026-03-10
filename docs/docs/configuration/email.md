@@ -1,3 +1,9 @@
+---
+title: email
+type: note
+permalink: voyage/docs/docs/configuration/email
+---
+
 # Change Email Backend
 
 To change the email backend, you can set the following variable in your docker-compose.yml under the server service:

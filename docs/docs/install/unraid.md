@@ -1,3 +1,9 @@
+---
+title: unraid
+type: note
+permalink: voyage/docs/docs/install/unraid
+---
+
 # Installation with Unraid
 
 Voyage is available in the Unraid Community Applications store. You can install it by searching for `Voyage` in the Community Applications store, where you will find the frontend and the backend. The database can be found by searching `PostGIS`.

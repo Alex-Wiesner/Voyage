@@ -1,3 +1,9 @@
+---
+title: social_auth
+type: note
+permalink: voyage/docs/docs/configuration/social-auth
+---
+
 # Social Authentication
 
 Voyage support authentication via 3rd party services and self-hosted identity providers. Once these services are enabled, users can log in to Voyage using their accounts from these services and link existing Voyage accounts to these services for easier access.

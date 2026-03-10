@@ -1,3 +1,9 @@
+---
+title: login_unresponsive
+type: note
+permalink: voyage/docs/docs/troubleshooting/login-unresponsive
+---
+
 # Troubleshooting: Login and Registration Unresponsive
 
 When you encounter issues with the login and registration pages being unresponsive in Voyage, it can be due to various reasons. This guide will help you troubleshoot and resolve the unresponsive login and registration pages in Voyage.

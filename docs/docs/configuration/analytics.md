@@ -1,3 +1,9 @@
+---
+title: analytics
+type: note
+permalink: voyage/docs/docs/configuration/analytics
+---
+
 # Umami Analytics (optional)
 
 Umami Analytics is a free, open-source, and privacy-focused web analytics tool that can be used as an alternative to Google Analytics. Learn more about Umami Analytics [here](https://umami.is/).

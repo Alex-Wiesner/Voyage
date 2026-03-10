@@ -1,3 +1,9 @@
+---
+title: dev_container_wsl
+type: note
+permalink: voyage/docs/docs/install/dev-container-wsl
+---
+
 # Dev Container + WSL 🧰
 
 Running Voyage in a **Dev Container** allows you to contribute to the project or work on features locally in a fully reproducible development environment with hot reloading, debugging, and tooling isolated inside Docker.

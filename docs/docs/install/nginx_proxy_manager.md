@@ -1,3 +1,9 @@
+---
+title: nginx_proxy_manager
+type: note
+permalink: voyage/docs/docs/install/nginx-proxy-manager
+---
+
 # Installation with Nginx Proxy Manager
 
 Nginx Proxy Manager is a simple and powerful tool that allows you to manage Nginx proxy hosts and SSL certificates. It is designed to be easy to use and configure, and it integrates well with Docker.

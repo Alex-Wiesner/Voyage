@@ -1,3 +1,9 @@
+---
+title: travel_agent
+type: note
+permalink: voyage/docs/docs/guides/travel-agent
+---
+
 # Travel Agent (MCP)
 
 Voyage includes a **Travel Agent** interface exposed through an **MCP-compatible HTTP endpoint**. This lets external MCP clients read and manage trip itineraries programmatically for authenticated users.

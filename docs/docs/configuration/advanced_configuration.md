@@ -1,3 +1,9 @@
+---
+title: advanced_configuration
+type: note
+permalink: voyage/docs/docs/configuration/advanced-configuration
+---
+
 # Advanced Configuration
 
 In addition to the primary configuration variables listed above, there are several optional environment variables that can be set to further customize your Voyage instance. These variables are not required for a basic setup but can enhance functionality and security.

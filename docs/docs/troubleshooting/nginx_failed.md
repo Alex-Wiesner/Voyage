@@ -1,3 +1,9 @@
+---
+title: nginx_failed
+type: note
+permalink: voyage/docs/docs/troubleshooting/nginx-failed
+---
+
 # Troubleshooting: `Starting nginx: nginx failed!` in the Backend Container
 
 ::: tip

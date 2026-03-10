@@ -1,3 +1,9 @@
+---
+title: README
+type: note
+permalink: voyage/readme
+---
+
 <div align="center">
 
   <img src="brand/voyage.png" alt="logo" width="200" height="auto" />

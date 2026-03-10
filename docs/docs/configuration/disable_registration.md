@@ -1,3 +1,9 @@
+---
+title: disable_registration
+type: note
+permalink: voyage/docs/docs/configuration/disable-registration
+---
+
 # Disable Registration
 
 To disable registration, you can set the following variable in your docker-compose.yml under the server service:

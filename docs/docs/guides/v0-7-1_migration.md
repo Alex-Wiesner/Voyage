@@ -1,3 +1,9 @@
+---
+title: v0-7-1_migration
+type: note
+permalink: voyage/docs/docs/guides/v0-7-1-migration
+---
+
 # Voyage v0.7.1 Migration
 
 In order to make installation easier, the Voyage v0.7.1 release has **removed the need for a separate nginx container** and config to serve the media files. Instead, the media files are now served by an instance of nginx running in the same container as the Django application.

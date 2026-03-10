@@ -1,3 +1,9 @@
+---
+title: getting_started
+type: note
+permalink: voyage/docs/docs/install/getting-started
+---
+
 # 🚀 Install Options for Voyage
 
 Voyage can be installed in a variety of ways, depending on your platform or preference.

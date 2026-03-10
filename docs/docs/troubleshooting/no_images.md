@@ -1,3 +1,9 @@
+---
+title: no_images
+type: note
+permalink: voyage/docs/docs/troubleshooting/no-images
+---
+
 # Troubleshooting: Images Not Displayed in Voyage
 
 The Voyage backend container uses a built-in Nginx container to serve media to the frontend. The `PUBLIC_URL` environment variable is set to the external URL of the **backend** container. This URL is used to generate the URLs for the images in the frontend. If this URL is not set correctly or not accessible from the frontend, the images will not be displayed.
