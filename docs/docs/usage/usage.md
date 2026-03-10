@@ -30,7 +30,7 @@ You can set a **default AI provider and model** in **Settings** (under "Default 
 
 Day suggestions (the AI-generated place recommendations for specific itinerary days) also respect your saved default provider and model. If no defaults are saved, the instance-level provider configured by the server admin is used.
 
-Provider errors (authentication, model not found, rate limits, invalid tool calls) are displayed as clear, actionable messages in the chat. If the AI attempts to use a tool incorrectly (e.g., missing required parameters), the error is surfaced once and the conversation stops cleanly rather than looping.
+Provider errors (authentication, model not found, rate limits, invalid tool calls) are displayed as clear, actionable messages in the chat. If the AI attempts to use a tool incorrectly (e.g., missing required parameters), the error is surfaced once and the conversation stops cleanly rather than looping. Tool execution failures (e.g., a place search that can't geocode, or an unavailable web search service) also stop with a single error message — the assistant won't keep retrying a broken tool.
 
 #### Collections
 

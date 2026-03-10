@@ -6,6 +6,7 @@
 	import { addToast } from '$lib/toasts';
 
 	type ToolResultEntry = {
+		tool_call_id?: string;
 		name: string;
 		result: unknown;
 	};
@@ -319,21 +320,58 @@
 
 		try {
 			return {
+				tool_call_id: msg.tool_call_id,
 				name: msg.name || 'tool',
 				result: JSON.parse(msg.content)
 			};
 		} catch {
 			return {
+				tool_call_id: msg.tool_call_id,
 				name: msg.name || 'tool',
 				result: msg.content
 			};
 		}
 	}
 
+	function appendToolResultDedup(
+		toolResults: ToolResultEntry[] | undefined,
+		toolResult: ToolResultEntry
+	): ToolResultEntry[] {
+		const next = toolResults || [];
+		if (
+			toolResult.tool_call_id &&
+			next.some((existing) => existing.tool_call_id === toolResult.tool_call_id)
+		) {
+			return next;
+		}
+
+		return [...next, toolResult];
+	}
+
+	function uniqueToolResultsByCallId(toolResults: ToolResultEntry[] | undefined): ToolResultEntry[] {
+		if (!toolResults) {
+			return [];
+		}
+
+		const seen = new Set<string>();
+		const unique: ToolResultEntry[] = [];
+		for (const result of toolResults) {
+			if (result.tool_call_id) {
+				if (seen.has(result.tool_call_id)) {
+					continue;
+				}
+				seen.add(result.tool_call_id);
+			}
+			unique.push(result);
+		}
+
+		return unique;
+	}
+
 	function rebuildConversationMessages(rawMessages: ChatMessage[]): ChatMessage[] {
 		const rebuilt = rawMessages.map((msg) => ({
 			...msg,
-			tool_results: msg.tool_results ? [...msg.tool_results] : undefined
+			tool_results: undefined
 		}));
 
 		let activeAssistant: ChatMessage | null = null;
@@ -361,7 +399,10 @@
 				continue;
 			}
 
-			activeAssistant.tool_results = [...(activeAssistant.tool_results || []), parsedResult];
+			activeAssistant.tool_results = appendToolResultDedup(
+				activeAssistant.tool_results,
+				parsedResult
+			);
 
 			if (
 				toolCallIds.length > 0 &&
@@ -466,10 +507,14 @@
 
 						if (parsed.tool_result) {
 							const toolResult: ToolResultEntry = {
+								tool_call_id: parsed.tool_result.tool_call_id,
 								name: parsed.tool_result.name || parsed.tool_result.tool || 'tool',
 								result: parsed.tool_result.result
 							};
-							assistantMsg.tool_results = [...(assistantMsg.tool_results || []), toolResult];
+							assistantMsg.tool_results = appendToolResultDedup(
+								assistantMsg.tool_results,
+								toolResult
+							);
 							messages = [...messages];
 						}
 					} catch {
@@ -891,7 +936,7 @@
 											<div class="whitespace-pre-wrap">{msg.content}</div>
 											{#if msg.role === 'assistant' && msg.tool_results}
 												<div class="mt-2 space-y-2">
-													{#each msg.tool_results as result}
+													{#each uniqueToolResultsByCallId(msg.tool_results) as result}
 														{#if hasPlaceResults(result)}
 															<div class="grid gap-2">
 																{#each getPlaceResults(result) as place}

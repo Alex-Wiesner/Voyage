@@ -62,6 +62,9 @@ class ChatViewSet(viewsets.ModelViewSet):
             if message.role == "tool"
             and message.tool_call_id
             and not self._is_required_param_tool_error_message_content(message.content)
+            and not self._is_execution_failure_tool_error_message_content(
+                message.content
+            )
         }
 
         messages = [
@@ -74,6 +77,13 @@ class ChatViewSet(viewsets.ModelViewSet):
             if (
                 message.role == "tool"
                 and self._is_required_param_tool_error_message_content(message.content)
+            ):
+                continue
+            if (
+                message.role == "tool"
+                and self._is_execution_failure_tool_error_message_content(
+                    message.content
+                )
             ):
                 continue
 
@@ -153,6 +163,24 @@ class ChatViewSet(viewsets.ModelViewSet):
         )
 
     @classmethod
+    def _is_execution_failure_tool_error(cls, result):
+        if not isinstance(result, dict):
+            return False
+
+        error_text = result.get("error")
+        if not isinstance(error_text, str) or not error_text.strip():
+            return False
+
+        return not cls._is_required_param_tool_error(result)
+
+    @staticmethod
+    def _is_retryable_execution_failure(result):
+        if not isinstance(result, dict):
+            return False
+
+        return result.get("retryable", True) is not False
+
+    @classmethod
     def _is_required_param_tool_error_message_content(cls, content):
         if not isinstance(content, str):
             return False
@@ -163,6 +191,18 @@ class ChatViewSet(viewsets.ModelViewSet):
             return False
 
         return cls._is_required_param_tool_error(parsed)
+
+    @classmethod
+    def _is_execution_failure_tool_error_message_content(cls, content):
+        if not isinstance(content, str):
+            return False
+
+        try:
+            parsed = json.loads(content)
+        except json.JSONDecodeError:
+            return False
+
+        return cls._is_execution_failure_tool_error(parsed)
 
     @staticmethod
     def _build_required_param_error_event(tool_name, result):
@@ -191,12 +231,45 @@ class ChatViewSet(viewsets.ModelViewSet):
         return "location" in normalized_error
 
     @staticmethod
+    def _is_search_places_geocode_error(tool_name, result):
+        if tool_name != "search_places" or not isinstance(result, dict):
+            return False
+
+        error_text = result.get("error")
+        if not isinstance(error_text, str):
+            return False
+
+        return error_text.strip().lower().startswith("could not geocode location")
+
+    @classmethod
+    def _is_search_places_location_retry_candidate_error(cls, tool_name, result):
+        return cls._is_search_places_missing_location_required_error(
+            tool_name,
+            result,
+        ) or cls._is_search_places_geocode_error(tool_name, result)
+
+    @staticmethod
     def _build_search_places_location_clarification_message():
         return (
             "Could you share the specific location you'd like me to search near "
             "(city, neighborhood, or address)? I can also focus on food, "
             "activities, or lodging."
         )
+
+    @staticmethod
+    def _build_tool_execution_error_event(tool_name, result):
+        tool_error = (
+            (result or {}).get("error")
+            if isinstance(result, dict)
+            else "Tool execution failed"
+        )
+        return {
+            "error": (
+                f"The assistant could not complete '{tool_name}' ({tool_error}). "
+                "Please try again in a moment or adjust your request."
+            ),
+            "error_category": "tool_execution_error",
+        }
 
     @staticmethod
     def _normalize_trip_context_destination(destination):
@@ -253,8 +326,35 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         return None
 
-    @staticmethod
-    def _is_likely_location_reply(user_content):
+    # Verbs that indicate a command/request rather than a location reply.
+    _COMMAND_VERBS = frozenset(
+        [
+            "find",
+            "search",
+            "show",
+            "get",
+            "look",
+            "give",
+            "tell",
+            "help",
+            "recommend",
+            "suggest",
+            "list",
+            "fetch",
+            "what",
+            "where",
+            "which",
+            "who",
+            "how",
+            "can",
+            "could",
+            "would",
+            "please",
+        ]
+    )
+
+    @classmethod
+    def _is_likely_location_reply(cls, user_content):
         if not isinstance(user_content, str):
             return False
 
@@ -270,6 +370,12 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         parts = normalized.split()
         if len(parts) > 6:
+            return False
+
+        # Exclude messages that start with a command/request verb — those are
+        # original requests, not replies to a "where?" clarification prompt.
+        first_word = parts[0].lower().rstrip(".,!;:")
+        if first_word in cls._COMMAND_VERBS:
             return False
 
         return bool(re.search(r"[a-z0-9]", normalized, re.IGNORECASE))
@@ -372,8 +478,21 @@ class ChatViewSet(viewsets.ModelViewSet):
                     fallback_name = (location.location or location.name or "").strip()
                     if not fallback_name:
                         continue
-                    stop_label = fallback_name
-                    stop_key = f"name:{fallback_name.lower()}"
+                    # When city/country FKs are not set, try to extract a geocodable
+                    # city name from a comma-separated address string.
+                    # e.g. "Little Turnstile 6, London" → "London"
+                    # e.g. "Kingsway 58, London" → "London"
+                    if "," in fallback_name:
+                        parts = [p.strip() for p in fallback_name.split(",")]
+                        # Last non-empty, non-purely-numeric segment is typically the city
+                        city_hint = next(
+                            (p for p in reversed(parts) if p and not p.isdigit()),
+                            None,
+                        )
+                        stop_label = city_hint if city_hint else fallback_name
+                    else:
+                        stop_label = fallback_name
+                    stop_key = f"name:{stop_label.lower()}"
 
                 if stop_key in seen_stops:
                     continue
@@ -420,11 +539,13 @@ class ChatViewSet(viewsets.ModelViewSet):
         )
 
         MAX_TOOL_ITERATIONS = 10
+        MAX_ALL_FAILURE_ROUNDS = 3
 
         async def event_stream():
             current_messages = list(llm_messages)
             encountered_error = False
             tool_iterations = 0
+            all_failure_rounds = 0
 
             while tool_iterations < MAX_TOOL_ITERATIONS:
                 content_chunks = []
@@ -472,10 +593,11 @@ class ChatViewSet(viewsets.ModelViewSet):
                 assistant_content = "".join(content_chunks)
 
                 if tool_calls_accumulator:
-                    tool_iterations += 1
                     successful_tool_calls = []
                     successful_tool_messages = []
                     successful_tool_chat_entries = []
+                    first_execution_failure = None
+                    encountered_permanent_failure = False
 
                     for tool_call in tool_calls_accumulator:
                         function_payload = tool_call.get("function") or {}
@@ -519,7 +641,8 @@ class ChatViewSet(viewsets.ModelViewSet):
                             **prepared_arguments,
                         )
 
-                        if self._is_search_places_missing_location_required_error(
+                        attempted_location_retry = False
+                        if self._is_search_places_location_retry_candidate_error(
                             function_name,
                             result,
                         ):
@@ -540,6 +663,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                                 ):
                                     continue
                                 seen_retry_locations.add(normalized_retry_location)
+                                attempted_location_retry = True
 
                                 retry_arguments = dict(prepared_arguments)
                                 retry_arguments["location"] = retry_location
@@ -552,7 +676,11 @@ class ChatViewSet(viewsets.ModelViewSet):
                                     **retry_arguments,
                                 )
 
-                                if not self._is_required_param_tool_error(retry_result):
+                                if not self._is_required_param_tool_error(
+                                    retry_result
+                                ) and not self._is_execution_failure_tool_error(
+                                    retry_result
+                                ):
                                     result = retry_result
                                     tool_call_for_history = {
                                         **tool_call,
@@ -563,6 +691,17 @@ class ChatViewSet(viewsets.ModelViewSet):
                                         },
                                     }
                                     break
+
+                            # If we attempted context retries but all failed, convert
+                            # to an execution failure so we never ask the user for a
+                            # location they already implied via itinerary context.
+                            if (
+                                attempted_location_retry
+                                and self._is_required_param_tool_error(result)
+                            ):
+                                result = {
+                                    "error": "Could not search places at the provided itinerary locations"
+                                }
 
                         if self._is_required_param_tool_error(result):
                             assistant_message_kwargs = {
@@ -585,9 +724,12 @@ class ChatViewSet(viewsets.ModelViewSet):
                                     thread_sensitive=True,
                                 )(**tool_message)
 
-                            if self._is_search_places_missing_location_required_error(
-                                function_name,
-                                result,
+                            if (
+                                not attempted_location_retry
+                                and self._is_search_places_missing_location_required_error(
+                                    function_name,
+                                    result,
+                                )
                             ):
                                 clarification_content = self._build_search_places_location_clarification_message()
                                 await sync_to_async(
@@ -630,6 +772,13 @@ class ChatViewSet(viewsets.ModelViewSet):
                             yield "data: [DONE]\n\n"
                             return
 
+                        if self._is_execution_failure_tool_error(result):
+                            if first_execution_failure is None:
+                                first_execution_failure = (function_name, result)
+                            if not self._is_retryable_execution_failure(result):
+                                encountered_permanent_failure = True
+                            continue
+
                         result_content = serialize_tool_result(result)
 
                         successful_tool_calls.append(tool_call_for_history)
@@ -658,6 +807,41 @@ class ChatViewSet(viewsets.ModelViewSet):
                             }
                         }
                         yield f"data: {json.dumps(tool_event)}\n\n"
+
+                    if not successful_tool_calls and first_execution_failure:
+                        if encountered_permanent_failure:
+                            all_failure_rounds = MAX_ALL_FAILURE_ROUNDS
+                        else:
+                            all_failure_rounds += 1
+
+                        if all_failure_rounds >= MAX_ALL_FAILURE_ROUNDS:
+                            failed_tool_name, failed_tool_result = (
+                                first_execution_failure
+                            )
+                            error_event = self._build_tool_execution_error_event(
+                                failed_tool_name,
+                                failed_tool_result,
+                            )
+                            await sync_to_async(
+                                ChatMessage.objects.create,
+                                thread_sensitive=True,
+                            )(
+                                conversation=conversation,
+                                role="assistant",
+                                content=error_event["error"],
+                            )
+                            await sync_to_async(
+                                conversation.save,
+                                thread_sensitive=True,
+                            )(update_fields=["updated_at"])
+                            yield f"data: {json.dumps(error_event)}\n\n"
+                            yield "data: [DONE]\n\n"
+                            return
+
+                        continue
+
+                    all_failure_rounds = 0
+                    tool_iterations += 1
 
                     assistant_with_tools = {
                         "role": "assistant",

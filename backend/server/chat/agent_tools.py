@@ -295,6 +295,7 @@ def web_search(user, query: str, location_context: str | None = None) -> dict:
         return {
             "error": "Web search is not available (duckduckgo-search not installed)",
             "results": [],
+            "retryable": False,
         }
     except Exception as exc:
         error_str = str(exc).lower()
@@ -637,9 +638,9 @@ def execute_tool(tool_name, user, **kwargs):
 
     try:
         return tool_fn(user=user, **filtered_kwargs)
-    except Exception as exc:
+    except Exception:
         logger.exception("Tool %s failed", tool_name)
-        return {"error": str(exc)}
+        return {"error": "Tool execution failed"}
 
 
 AGENT_TOOLS = get_tool_schemas()
