@@ -199,8 +199,31 @@ class ChatViewSet(viewsets.ModelViewSet):
         )
 
     @staticmethod
-    def _trip_context_search_location(destination, itinerary_stops):
+    def _normalize_trip_context_destination(destination):
         destination_text = (destination or "").strip()
+        if not destination_text:
+            return ""
+
+        if ";" not in destination_text:
+            if re.fullmatch(r"\+\d+\s+more", destination_text, re.IGNORECASE):
+                return ""
+            return destination_text
+
+        for segment in destination_text.split(";"):
+            segment_text = segment.strip()
+            if not segment_text:
+                continue
+
+            if re.fullmatch(r"\+\d+\s+more", segment_text, re.IGNORECASE):
+                continue
+
+            return segment_text
+
+        return ""
+
+    @classmethod
+    def _trip_context_search_location(cls, destination, itinerary_stops):
+        destination_text = cls._normalize_trip_context_destination(destination)
         if destination_text:
             return destination_text
 
@@ -309,8 +332,6 @@ class ChatViewSet(viewsets.ModelViewSet):
         itinerary_stops = []
         if collection_name:
             context_parts.append(f"Trip: {collection_name}")
-        if destination:
-            context_parts.append(f"Destination: {destination}")
         if start_date and end_date:
             context_parts.append(f"Dates: {start_date} to {end_date}")
 
@@ -369,6 +390,8 @@ class ChatViewSet(viewsets.ModelViewSet):
         trip_context_location = self._trip_context_search_location(
             destination, itinerary_stops
         )
+        if trip_context_location:
+            context_parts.append(f"Destination: {trip_context_location}")
         prior_user_messages = list(
             conversation.messages.filter(role="user")
             .order_by("-created_at")
