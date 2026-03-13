@@ -1,3 +1,9 @@
+---
+title: provider-strategy
+type: note
+permalink: voyage/research/provider-strategy
+---
+
 # Research: Multi-Provider Strategy for Voyage AI Chat
 
 **Date**: 2026-03-09

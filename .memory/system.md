@@ -1,1 +1,7 @@
+---
+title: system
+type: note
+permalink: voyage/system
+---
+
 Voyage is a self-hosted travel companion web app (fork of AdventureLog) built with SvelteKit 2 (TypeScript) frontend, Django REST Framework (Python) backend, PostgreSQL/PostGIS, Memcached, and Docker. It provides trip planning with collections/itineraries, AI-powered travel chat with multi-provider LLM support (via LiteLLM), location/lodging/transportation management, user preference learning, and collaborative trip sharing. The project is pre-release — architecture-level changes are allowed. See [knowledge/overview.md](knowledge/overview.md) for architecture and [decisions.md](decisions.md) for ADRs.

@@ -1,3 +1,9 @@
+---
+title: ai-travel-agent-redesign
+type: note
+permalink: voyage/plans/ai-travel-agent-redesign
+---
+
 # AI Travel Agent Redesign Plan
 
 ## Vision Summary

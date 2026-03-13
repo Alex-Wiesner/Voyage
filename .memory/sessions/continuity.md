@@ -1,3 +1,9 @@
+---
+title: continuity
+type: note
+permalink: voyage/sessions/continuity
+---
+
 # Session Continuity
 
 ## Last Session (2026-03-09)

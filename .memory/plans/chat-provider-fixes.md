@@ -1,3 +1,9 @@
+---
+title: chat-provider-fixes
+type: note
+permalink: voyage/plans/chat-provider-fixes
+---
+
 # Chat Provider Fixes
 
 ## Problem Statement

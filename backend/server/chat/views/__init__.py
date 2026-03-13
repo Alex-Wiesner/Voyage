@@ -2,10 +2,12 @@ import asyncio
 import json
 import logging
 import re
+from datetime import timedelta
 
 from asgiref.sync import sync_to_async
 from adventures.models import Collection
 from django.http import StreamingHttpResponse
+from django.utils import timezone
 from integrations.models import UserAISettings
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -275,6 +277,33 @@ class ChatViewSet(viewsets.ModelViewSet):
                 except (TypeError, ValueError):
                     continue
         return None
+
+    @staticmethod
+    def _derive_weather_dates_from_collection(collection, max_days=7):
+        """Derive a bounded weather date list from collection dates, or fallback to today."""
+        today = timezone.localdate()
+        if collection is None:
+            return [today.isoformat()]
+
+        start_date = getattr(collection, "start_date", None)
+        end_date = getattr(collection, "end_date", None)
+
+        if start_date and end_date:
+            range_start = min(start_date, end_date)
+            range_end = max(start_date, end_date)
+            day_count = min((range_end - range_start).days + 1, max_days)
+            return [
+                (range_start + timedelta(days=offset)).isoformat()
+                for offset in range(day_count)
+            ]
+
+        if start_date:
+            return [start_date.isoformat()]
+
+        if end_date:
+            return [end_date.isoformat()]
+
+        return [today.isoformat()]
 
     @staticmethod
     def _build_search_places_location_clarification_message():
@@ -744,6 +773,12 @@ class ChatViewSet(viewsets.ModelViewSet):
                                 retry_arguments = dict(prepared_arguments)
                                 retry_arguments["latitude"] = retry_lat
                                 retry_arguments["longitude"] = retry_lon
+                                if not retry_arguments.get("dates"):
+                                    retry_arguments["dates"] = (
+                                        self._derive_weather_dates_from_collection(
+                                            collection
+                                        )
+                                    )
                                 attempted_weather_coord_retry = True
                                 retry_result = await sync_to_async(
                                     execute_tool,
@@ -774,6 +809,10 @@ class ChatViewSet(viewsets.ModelViewSet):
                             if (
                                 attempted_weather_coord_retry
                                 and self._is_required_param_tool_error(result)
+                                and self._is_get_weather_missing_latlong_error(
+                                    function_name,
+                                    result,
+                                )
                             ):
                                 result = {
                                     "error": "Could not fetch weather for the collection locations"

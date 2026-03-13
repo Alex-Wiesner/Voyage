@@ -1,3 +1,9 @@
+---
+title: ai-travel-agent-collections-integration
+type: note
+permalink: voyage/plans/ai-travel-agent-collections-integration
+---
+
 # Plan: AI travel agent in Collections Recommendations
 
 ## Clarified requirements

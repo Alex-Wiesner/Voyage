@@ -1,3 +1,9 @@
+---
+title: tech-stack
+type: note
+permalink: voyage/knowledge/tech-stack
+---
+
 # Tech Stack & Development
 
 ## Stack

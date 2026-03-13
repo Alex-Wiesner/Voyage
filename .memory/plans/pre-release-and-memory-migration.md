@@ -1,3 +1,9 @@
+---
+title: pre-release-and-memory-migration
+type: note
+permalink: voyage/plans/pre-release-and-memory-migration
+---
+
 # Plan: Pre-release policy + .memory migration
 
 ## Scope

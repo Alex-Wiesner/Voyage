@@ -1,3 +1,9 @@
+---
+title: chat-and-llm
+type: note
+permalink: voyage/knowledge/patterns/chat-and-llm
+---
+
 # Chat & LLM Patterns
 
 ## Default AI Settings & Model Override

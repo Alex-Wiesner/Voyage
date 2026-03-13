@@ -1,3 +1,9 @@
+---
+title: opencode-zen-connection-debug
+type: note
+permalink: voyage/research/opencode-zen-connection-debug
+---
+
 # OpenCode Zen Connection Debug — Research Findings
 
 **Date**: 2026-03-08

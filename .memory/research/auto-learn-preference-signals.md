@@ -1,3 +1,9 @@
+---
+title: auto-learn-preference-signals
+type: note
+permalink: voyage/research/auto-learn-preference-signals
+---
+
 # Research: Auto-Learn User Preference Signals
 
 ## Purpose

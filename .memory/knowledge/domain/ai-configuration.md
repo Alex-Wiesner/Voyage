@@ -1,3 +1,9 @@
+---
+title: ai-configuration
+type: note
+permalink: voyage/knowledge/domain/ai-configuration
+---
+
 # AI Configuration Domain
 
 ## WS1 Configuration Infrastructure

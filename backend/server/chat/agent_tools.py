@@ -1,14 +1,24 @@
 import json
 import inspect
 import logging
-from datetime import date as date_cls
+from datetime import date as date_cls, datetime
 
 import requests
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
-from adventures.models import Collection, CollectionItineraryItem, Location
+from adventures.models import (
+    Collection,
+    CollectionItineraryItem,
+    Lodging,
+    Location,
+    Transportation,
+    Visit,
+)
+from adventures.utils.itinerary import reorder_itinerary_items
+from adventures.utils.weather import fetch_daily_temperature
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +73,108 @@ OPEN_METEO_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 REQUEST_HEADERS = {"User-Agent": "Voyage/1.0"}
 LOCATION_COORD_TOLERANCE = 0.00001
+
+
+def _get_accessible_collection(user, collection_id: str):
+    return (
+        Collection.objects.filter(Q(user=user) | Q(shared_with=user))
+        .distinct()
+        .get(id=collection_id)
+    )
+
+
+def _normalize_date_input(value):
+    if value is None:
+        return None
+    if isinstance(value, date_cls):
+        return value
+
+    raw = str(value).strip()
+    if not raw:
+        return None
+
+    try:
+        return date_cls.fromisoformat(raw[:10])
+    except ValueError:
+        return None
+
+
+def _normalize_datetime_input(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+
+    raw = str(value).strip()
+    if not raw:
+        return None
+
+    parsed = None
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        parsed = None
+
+    if parsed is None:
+        parsed_date = _normalize_date_input(raw)
+        if parsed_date is None:
+            return None
+        parsed = datetime.combine(parsed_date, datetime.min.time())
+
+    if timezone.is_naive(parsed):
+        parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+
+    return parsed
+
+
+def _parse_float(value):
+    if value is None or value == "":
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _serialize_lodging(lodging: Lodging):
+    return {
+        "id": str(lodging.id),
+        "name": lodging.name,
+        "type": lodging.type,
+        "check_in": lodging.check_in.isoformat() if lodging.check_in else None,
+        "check_out": lodging.check_out.isoformat() if lodging.check_out else None,
+        "location": lodging.location or "",
+        "latitude": float(lodging.latitude) if lodging.latitude is not None else None,
+        "longitude": float(lodging.longitude)
+        if lodging.longitude is not None
+        else None,
+    }
+
+
+def _serialize_transportation(transportation: Transportation):
+    return {
+        "id": str(transportation.id),
+        "name": transportation.name,
+        "type": transportation.type,
+        "date": transportation.date.isoformat() if transportation.date else None,
+        "end_date": transportation.end_date.isoformat()
+        if transportation.end_date
+        else None,
+        "from_location": transportation.from_location or "",
+        "to_location": transportation.to_location or "",
+        "origin_latitude": float(transportation.origin_latitude)
+        if transportation.origin_latitude is not None
+        else None,
+        "origin_longitude": float(transportation.origin_longitude)
+        if transportation.origin_longitude is not None
+        else None,
+        "destination_latitude": float(transportation.destination_latitude)
+        if transportation.destination_latitude is not None
+        else None,
+        "destination_longitude": float(transportation.destination_longitude)
+        if transportation.destination_longitude is not None
+        else None,
+    }
 
 
 def _build_overpass_query(latitude, longitude, radius_meters, category):
@@ -581,50 +693,891 @@ def add_to_itinerary(
         return {"error": "An unexpected error occurred while adding to itinerary"}
 
 
-def _fetch_temperature_for_date(latitude, longitude, date_value):
-    for url in (OPEN_METEO_ARCHIVE_URL, OPEN_METEO_FORECAST_URL):
-        try:
-            response = requests.get(
-                url,
-                params={
-                    "latitude": latitude,
-                    "longitude": longitude,
-                    "start_date": date_value,
-                    "end_date": date_value,
-                    "daily": "temperature_2m_max,temperature_2m_min",
-                    "timezone": "UTC",
-                },
-                timeout=8,
+@agent_tool(
+    name="move_itinerary_item",
+    description="Move or reorder an existing itinerary item to another day/order in a trip",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "itinerary_item_id": {
+            "type": "string",
+            "description": "UUID of the itinerary item to move",
+            "required": True,
+        },
+        "date": {
+            "type": "string",
+            "description": "Target date in YYYY-MM-DD format",
+            "required": True,
+        },
+        "order": {
+            "type": "number",
+            "description": "Optional zero-based position for the target day",
+        },
+    },
+)
+def move_itinerary_item(
+    user,
+    collection_id: str | None = None,
+    itinerary_item_id: str | None = None,
+    date: str | None = None,
+    order: int | None = None,
+):
+    try:
+        if not collection_id or not itinerary_item_id or not date:
+            return {"error": "collection_id, itinerary_item_id, and date are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+        target_date = _normalize_date_input(date)
+        if target_date is None:
+            return {"error": "date must be in YYYY-MM-DD format"}
+
+        itinerary_item = CollectionItineraryItem.objects.filter(
+            collection=collection,
+            id=itinerary_item_id,
+        ).first()
+        if itinerary_item is None:
+            return {"error": "Itinerary item not found"}
+
+        desired_order = None
+        if order is not None:
+            try:
+                desired_order = int(order)
+            except (TypeError, ValueError):
+                return {"error": "order must be numeric"}
+            desired_order = max(0, desired_order)
+
+        source_date = itinerary_item.date
+        target_items = list(
+            CollectionItineraryItem.objects.filter(
+                collection=collection,
+                date=target_date,
+                is_global=False,
             )
-            response.raise_for_status()
-            data = response.json()
-        except requests.RequestException:
-            continue
-        except ValueError:
-            continue
+            .exclude(id=itinerary_item.id)
+            .order_by("order")
+        )
 
-        daily = data.get("daily") or {}
-        max_values = daily.get("temperature_2m_max") or []
-        min_values = daily.get("temperature_2m_min") or []
-        if not max_values or not min_values:
-            continue
+        insert_at = len(target_items)
+        if desired_order is not None:
+            insert_at = min(desired_order, len(target_items))
 
-        try:
-            avg = (float(max_values[0]) + float(min_values[0])) / 2
-        except (TypeError, ValueError, IndexError):
-            continue
+        updates = []
+        for idx, item in enumerate(target_items):
+            if idx == insert_at:
+                updates.append(
+                    {
+                        "id": str(itinerary_item.id),
+                        "date": target_date,
+                        "order": insert_at,
+                        "is_global": False,
+                    }
+                )
+            updates.append(
+                {
+                    "id": str(item.id),
+                    "date": target_date,
+                    "order": idx + (1 if idx >= insert_at else 0),
+                    "is_global": False,
+                }
+            )
+
+        if insert_at == len(target_items):
+            updates.append(
+                {
+                    "id": str(itinerary_item.id),
+                    "date": target_date,
+                    "order": insert_at,
+                    "is_global": False,
+                }
+            )
+
+        if source_date and source_date != target_date:
+            remaining_source = CollectionItineraryItem.objects.filter(
+                collection=collection,
+                date=source_date,
+                is_global=False,
+            ).exclude(id=itinerary_item.id)
+            for idx, item in enumerate(remaining_source.order_by("order")):
+                updates.append(
+                    {
+                        "id": str(item.id),
+                        "date": source_date,
+                        "order": idx,
+                        "is_global": False,
+                    }
+                )
+
+        updated_items = reorder_itinerary_items(user, updates)
+        moved_item = next(
+            (item for item in updated_items if str(item.id) == str(itinerary_item.id)),
+            itinerary_item,
+        )
+        moved_date = _normalize_date_input(getattr(moved_item, "date", None))
+        return {
+            "success": True,
+            "itinerary_item": {
+                "id": str(moved_item.id),
+                "date": moved_date.isoformat() if moved_date else None,
+                "order": moved_item.order,
+            },
+            "source_date": source_date.isoformat() if source_date else None,
+            "target_date": target_date.isoformat(),
+        }
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("move_itinerary_item failed")
+        return {"error": "An unexpected error occurred while moving itinerary item"}
+
+
+@agent_tool(
+    name="remove_itinerary_item",
+    description="Remove an itinerary item from a trip day",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "itinerary_item_id": {
+            "type": "string",
+            "description": "UUID of the itinerary item to remove",
+            "required": True,
+        },
+    },
+)
+def remove_itinerary_item(
+    user,
+    collection_id: str | None = None,
+    itinerary_item_id: str | None = None,
+):
+    try:
+        if not collection_id or not itinerary_item_id:
+            return {"error": "collection_id and itinerary_item_id are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+        itinerary_item = CollectionItineraryItem.objects.filter(
+            collection=collection,
+            id=itinerary_item_id,
+        ).first()
+        if itinerary_item is None:
+            return {"error": "Itinerary item not found"}
+
+        object_type = itinerary_item.content_type.model
+        deleted_visit_count = 0
+
+        if object_type == "location" and itinerary_item.date:
+            location = Location.objects.filter(id=itinerary_item.object_id).first()
+            if location:
+                visits = Visit.objects.filter(
+                    location=location,
+                    start_date__date=itinerary_item.date,
+                )
+                deleted_visit_count = visits.count()
+                visits.delete()
+
+        itinerary_item.delete()
 
         return {
-            "date": date_value,
-            "available": True,
-            "temperature_c": round(avg, 1),
+            "success": True,
+            "removed_itinerary_item_id": itinerary_item_id,
+            "removed_object_type": object_type,
+            "deleted_visit_count": deleted_visit_count,
         }
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("remove_itinerary_item failed")
+        return {"error": "An unexpected error occurred while removing itinerary item"}
 
-    return {
-        "date": date_value,
-        "available": False,
-        "temperature_c": None,
-    }
+
+@agent_tool(
+    name="update_location_details",
+    description="Update itinerary-relevant details for a location in a trip",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "location_id": {
+            "type": "string",
+            "description": "UUID of the location",
+            "required": True,
+        },
+        "name": {"type": "string", "description": "Updated location name"},
+        "description": {
+            "type": "string",
+            "description": "Updated location description",
+        },
+        "location": {"type": "string", "description": "Updated address/location text"},
+        "latitude": {"type": "number", "description": "Updated latitude"},
+        "longitude": {"type": "number", "description": "Updated longitude"},
+    },
+)
+def update_location_details(
+    user,
+    collection_id: str | None = None,
+    location_id: str | None = None,
+    name: str | None = None,
+    description: str | None = None,
+    location: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+):
+    try:
+        if not collection_id or not location_id:
+            return {"error": "collection_id and location_id are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+        location_obj = collection.locations.filter(id=location_id).first()
+        if location_obj is None:
+            return {"error": "Location not found in this trip"}
+
+        updated_fields = []
+        if isinstance(name, str) and name.strip():
+            location_obj.name = name.strip()
+            updated_fields.append("name")
+        if description is not None:
+            location_obj.description = str(description)
+            updated_fields.append("description")
+        if location is not None:
+            location_obj.location = str(location)
+            updated_fields.append("location")
+
+        parsed_lat = _parse_float(latitude)
+        parsed_lon = _parse_float(longitude)
+        if latitude is not None and parsed_lat is None:
+            return {"error": "latitude must be numeric"}
+        if longitude is not None and parsed_lon is None:
+            return {"error": "longitude must be numeric"}
+        if latitude is not None:
+            location_obj.latitude = parsed_lat
+            updated_fields.append("latitude")
+        if longitude is not None:
+            location_obj.longitude = parsed_lon
+            updated_fields.append("longitude")
+
+        if not updated_fields:
+            return {"error": "At least one field to update is required"}
+
+        location_obj.save(update_fields=updated_fields)
+
+        return {
+            "success": True,
+            "location": {
+                "id": str(location_obj.id),
+                "name": location_obj.name,
+                "description": location_obj.description or "",
+                "location": location_obj.location or "",
+                "latitude": float(location_obj.latitude)
+                if location_obj.latitude is not None
+                else None,
+                "longitude": float(location_obj.longitude)
+                if location_obj.longitude is not None
+                else None,
+            },
+        }
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("update_location_details failed")
+        return {"error": "An unexpected error occurred while updating location"}
+
+
+@agent_tool(
+    name="add_lodging",
+    description="Add a lodging stay to a trip and optionally add it to itinerary day",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "name": {"type": "string", "description": "Lodging name", "required": True},
+        "type": {
+            "type": "string",
+            "description": "Lodging type (hotel, hostel, resort, bnb, campground, cabin, apartment, house, villa, motel, other)",
+        },
+        "location": {"type": "string", "description": "Address or location text"},
+        "check_in": {
+            "type": "string",
+            "description": "Check-in datetime or date (ISO format)",
+        },
+        "check_out": {
+            "type": "string",
+            "description": "Check-out datetime or date (ISO format)",
+        },
+        "latitude": {"type": "number", "description": "Latitude"},
+        "longitude": {"type": "number", "description": "Longitude"},
+        "itinerary_date": {
+            "type": "string",
+            "description": "Optional day in YYYY-MM-DD to add this lodging to itinerary",
+        },
+    },
+)
+def add_lodging(
+    user,
+    collection_id: str | None = None,
+    name: str | None = None,
+    type: str | None = None,
+    location: str | None = None,
+    check_in: str | None = None,
+    check_out: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+    itinerary_date: str | None = None,
+):
+    try:
+        if not collection_id or not name:
+            return {"error": "collection_id and name are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+
+        parsed_check_in = _normalize_datetime_input(check_in)
+        parsed_check_out = _normalize_datetime_input(check_out)
+        if check_in and parsed_check_in is None:
+            return {"error": "check_in must be a valid ISO date or datetime"}
+        if check_out and parsed_check_out is None:
+            return {"error": "check_out must be a valid ISO date or datetime"}
+
+        parsed_lat = _parse_float(latitude)
+        parsed_lon = _parse_float(longitude)
+        if latitude is not None and parsed_lat is None:
+            return {"error": "latitude must be numeric"}
+        if longitude is not None and parsed_lon is None:
+            return {"error": "longitude must be numeric"}
+
+        lodging = Lodging.objects.create(
+            user=collection.user,
+            collection=collection,
+            name=name,
+            type=(type or "other"),
+            location=location or "",
+            check_in=parsed_check_in,
+            check_out=parsed_check_out,
+            latitude=parsed_lat,
+            longitude=parsed_lon,
+        )
+
+        itinerary_item = None
+        if itinerary_date:
+            itinerary_day = _normalize_date_input(itinerary_date)
+            if itinerary_day is None:
+                return {"error": "itinerary_date must be in YYYY-MM-DD format"}
+
+            max_order = (
+                CollectionItineraryItem.objects.filter(
+                    collection=collection,
+                    date=itinerary_day,
+                    is_global=False,
+                ).aggregate(models.Max("order"))["order__max"]
+                or 0
+            )
+            itinerary_item = CollectionItineraryItem.objects.create(
+                collection=collection,
+                content_type=ContentType.objects.get_for_model(Lodging),
+                object_id=lodging.id,
+                date=itinerary_day,
+                order=max_order + 1,
+            )
+
+        return {
+            "success": True,
+            "lodging": _serialize_lodging(lodging),
+            "itinerary_item": {
+                "id": str(itinerary_item.id),
+                "date": itinerary_item.date.isoformat() if itinerary_item else None,
+                "order": itinerary_item.order if itinerary_item else None,
+            }
+            if itinerary_item
+            else None,
+        }
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("add_lodging failed")
+        return {"error": "An unexpected error occurred while adding lodging"}
+
+
+@agent_tool(
+    name="update_lodging",
+    description="Update lodging details for an existing trip lodging item",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "lodging_id": {
+            "type": "string",
+            "description": "UUID of the lodging",
+            "required": True,
+        },
+        "name": {"type": "string", "description": "Updated lodging name"},
+        "type": {"type": "string", "description": "Updated lodging type"},
+        "location": {"type": "string", "description": "Updated location text"},
+        "check_in": {
+            "type": "string",
+            "description": "Updated check-in datetime/date (ISO)",
+        },
+        "check_out": {
+            "type": "string",
+            "description": "Updated check-out datetime/date (ISO)",
+        },
+        "latitude": {"type": "number", "description": "Updated latitude"},
+        "longitude": {"type": "number", "description": "Updated longitude"},
+    },
+)
+def update_lodging(
+    user,
+    collection_id: str | None = None,
+    lodging_id: str | None = None,
+    name: str | None = None,
+    type: str | None = None,
+    location: str | None = None,
+    check_in: str | None = None,
+    check_out: str | None = None,
+    latitude: float | None = None,
+    longitude: float | None = None,
+):
+    try:
+        if not collection_id or not lodging_id:
+            return {"error": "collection_id and lodging_id are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+        lodging = Lodging.objects.filter(id=lodging_id, collection=collection).first()
+        if lodging is None:
+            return {"error": "Lodging not found"}
+
+        updates = []
+        if isinstance(name, str) and name.strip():
+            lodging.name = name.strip()
+            updates.append("name")
+        if isinstance(type, str) and type.strip():
+            lodging.type = type.strip()
+            updates.append("type")
+        if location is not None:
+            lodging.location = str(location)
+            updates.append("location")
+
+        parsed_check_in = _normalize_datetime_input(check_in)
+        parsed_check_out = _normalize_datetime_input(check_out)
+        if check_in is not None and parsed_check_in is None:
+            return {"error": "check_in must be a valid ISO date or datetime"}
+        if check_out is not None and parsed_check_out is None:
+            return {"error": "check_out must be a valid ISO date or datetime"}
+        if check_in is not None:
+            lodging.check_in = parsed_check_in
+            updates.append("check_in")
+        if check_out is not None:
+            lodging.check_out = parsed_check_out
+            updates.append("check_out")
+
+        parsed_lat = _parse_float(latitude)
+        parsed_lon = _parse_float(longitude)
+        if latitude is not None and parsed_lat is None:
+            return {"error": "latitude must be numeric"}
+        if longitude is not None and parsed_lon is None:
+            return {"error": "longitude must be numeric"}
+        if latitude is not None:
+            lodging.latitude = parsed_lat
+            updates.append("latitude")
+        if longitude is not None:
+            lodging.longitude = parsed_lon
+            updates.append("longitude")
+
+        if not updates:
+            return {"error": "At least one field to update is required"}
+
+        lodging.save(update_fields=updates)
+        return {"success": True, "lodging": _serialize_lodging(lodging)}
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("update_lodging failed")
+        return {"error": "An unexpected error occurred while updating lodging"}
+
+
+@agent_tool(
+    name="remove_lodging",
+    description="Remove a lodging record from a trip",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "lodging_id": {
+            "type": "string",
+            "description": "UUID of the lodging",
+            "required": True,
+        },
+    },
+)
+def remove_lodging(
+    user,
+    collection_id: str | None = None,
+    lodging_id: str | None = None,
+):
+    try:
+        if not collection_id or not lodging_id:
+            return {"error": "collection_id and lodging_id are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+        lodging = Lodging.objects.filter(id=lodging_id, collection=collection).first()
+        if lodging is None:
+            return {"error": "Lodging not found"}
+
+        itinerary_deleted = CollectionItineraryItem.objects.filter(
+            collection=collection,
+            content_type=ContentType.objects.get_for_model(Lodging),
+            object_id=lodging.id,
+        ).delete()[0]
+        lodging.delete()
+        return {
+            "success": True,
+            "removed_lodging_id": lodging_id,
+            "removed_itinerary_items": itinerary_deleted,
+        }
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("remove_lodging failed")
+        return {"error": "An unexpected error occurred while removing lodging"}
+
+
+@agent_tool(
+    name="add_transportation",
+    description="Add transportation to a trip and optionally add it to itinerary day",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "name": {
+            "type": "string",
+            "description": "Transportation name",
+            "required": True,
+        },
+        "type": {
+            "type": "string",
+            "description": "Transportation type (car, plane, train, bus, boat, bike, walking, other)",
+            "required": True,
+        },
+        "date": {
+            "type": "string",
+            "description": "Departure datetime/date (ISO)",
+        },
+        "end_date": {
+            "type": "string",
+            "description": "Arrival datetime/date (ISO)",
+        },
+        "from_location": {"type": "string", "description": "Origin location text"},
+        "to_location": {"type": "string", "description": "Destination location text"},
+        "origin_latitude": {"type": "number", "description": "Origin latitude"},
+        "origin_longitude": {"type": "number", "description": "Origin longitude"},
+        "destination_latitude": {
+            "type": "number",
+            "description": "Destination latitude",
+        },
+        "destination_longitude": {
+            "type": "number",
+            "description": "Destination longitude",
+        },
+        "itinerary_date": {
+            "type": "string",
+            "description": "Optional day in YYYY-MM-DD to add this transportation to itinerary",
+        },
+    },
+)
+def add_transportation(
+    user,
+    collection_id: str | None = None,
+    name: str | None = None,
+    type: str | None = None,
+    date: str | None = None,
+    end_date: str | None = None,
+    from_location: str | None = None,
+    to_location: str | None = None,
+    origin_latitude: float | None = None,
+    origin_longitude: float | None = None,
+    destination_latitude: float | None = None,
+    destination_longitude: float | None = None,
+    itinerary_date: str | None = None,
+):
+    try:
+        if not collection_id or not name or not type:
+            return {"error": "collection_id, name, and type are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+
+        parsed_date = _normalize_datetime_input(date)
+        parsed_end_date = _normalize_datetime_input(end_date)
+        if date and parsed_date is None:
+            return {"error": "date must be a valid ISO date or datetime"}
+        if end_date and parsed_end_date is None:
+            return {"error": "end_date must be a valid ISO date or datetime"}
+
+        parsed_origin_lat = _parse_float(origin_latitude)
+        parsed_origin_lon = _parse_float(origin_longitude)
+        parsed_destination_lat = _parse_float(destination_latitude)
+        parsed_destination_lon = _parse_float(destination_longitude)
+        if origin_latitude is not None and parsed_origin_lat is None:
+            return {"error": "origin_latitude must be numeric"}
+        if origin_longitude is not None and parsed_origin_lon is None:
+            return {"error": "origin_longitude must be numeric"}
+        if destination_latitude is not None and parsed_destination_lat is None:
+            return {"error": "destination_latitude must be numeric"}
+        if destination_longitude is not None and parsed_destination_lon is None:
+            return {"error": "destination_longitude must be numeric"}
+
+        transportation = Transportation.objects.create(
+            user=collection.user,
+            collection=collection,
+            name=name,
+            type=type,
+            date=parsed_date,
+            end_date=parsed_end_date,
+            from_location=from_location or "",
+            to_location=to_location or "",
+            origin_latitude=parsed_origin_lat,
+            origin_longitude=parsed_origin_lon,
+            destination_latitude=parsed_destination_lat,
+            destination_longitude=parsed_destination_lon,
+        )
+
+        itinerary_item = None
+        if itinerary_date:
+            itinerary_day = _normalize_date_input(itinerary_date)
+            if itinerary_day is None:
+                return {"error": "itinerary_date must be in YYYY-MM-DD format"}
+
+            max_order = (
+                CollectionItineraryItem.objects.filter(
+                    collection=collection,
+                    date=itinerary_day,
+                    is_global=False,
+                ).aggregate(models.Max("order"))["order__max"]
+                or 0
+            )
+            itinerary_item = CollectionItineraryItem.objects.create(
+                collection=collection,
+                content_type=ContentType.objects.get_for_model(Transportation),
+                object_id=transportation.id,
+                date=itinerary_day,
+                order=max_order + 1,
+            )
+
+        return {
+            "success": True,
+            "transportation": _serialize_transportation(transportation),
+            "itinerary_item": {
+                "id": str(itinerary_item.id),
+                "date": itinerary_item.date.isoformat() if itinerary_item else None,
+                "order": itinerary_item.order if itinerary_item else None,
+            }
+            if itinerary_item
+            else None,
+        }
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("add_transportation failed")
+        return {"error": "An unexpected error occurred while adding transportation"}
+
+
+@agent_tool(
+    name="update_transportation",
+    description="Update details for an existing transportation item",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "transportation_id": {
+            "type": "string",
+            "description": "UUID of the transportation",
+            "required": True,
+        },
+        "name": {"type": "string", "description": "Updated transportation name"},
+        "type": {"type": "string", "description": "Updated transportation type"},
+        "date": {"type": "string", "description": "Updated departure datetime/date"},
+        "end_date": {
+            "type": "string",
+            "description": "Updated arrival datetime/date",
+        },
+        "from_location": {
+            "type": "string",
+            "description": "Updated origin location text",
+        },
+        "to_location": {
+            "type": "string",
+            "description": "Updated destination location text",
+        },
+        "origin_latitude": {"type": "number", "description": "Updated origin latitude"},
+        "origin_longitude": {
+            "type": "number",
+            "description": "Updated origin longitude",
+        },
+        "destination_latitude": {
+            "type": "number",
+            "description": "Updated destination latitude",
+        },
+        "destination_longitude": {
+            "type": "number",
+            "description": "Updated destination longitude",
+        },
+    },
+)
+def update_transportation(
+    user,
+    collection_id: str | None = None,
+    transportation_id: str | None = None,
+    name: str | None = None,
+    type: str | None = None,
+    date: str | None = None,
+    end_date: str | None = None,
+    from_location: str | None = None,
+    to_location: str | None = None,
+    origin_latitude: float | None = None,
+    origin_longitude: float | None = None,
+    destination_latitude: float | None = None,
+    destination_longitude: float | None = None,
+):
+    try:
+        if not collection_id or not transportation_id:
+            return {"error": "collection_id and transportation_id are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+        transportation = Transportation.objects.filter(
+            id=transportation_id,
+            collection=collection,
+        ).first()
+        if transportation is None:
+            return {"error": "Transportation not found"}
+
+        updates = []
+        if isinstance(name, str) and name.strip():
+            transportation.name = name.strip()
+            updates.append("name")
+        if isinstance(type, str) and type.strip():
+            transportation.type = type.strip()
+            updates.append("type")
+        if from_location is not None:
+            transportation.from_location = str(from_location)
+            updates.append("from_location")
+        if to_location is not None:
+            transportation.to_location = str(to_location)
+            updates.append("to_location")
+
+        parsed_date = _normalize_datetime_input(date)
+        parsed_end_date = _normalize_datetime_input(end_date)
+        if date is not None and parsed_date is None:
+            return {"error": "date must be a valid ISO date or datetime"}
+        if end_date is not None and parsed_end_date is None:
+            return {"error": "end_date must be a valid ISO date or datetime"}
+        if date is not None:
+            transportation.date = parsed_date
+            updates.append("date")
+        if end_date is not None:
+            transportation.end_date = parsed_end_date
+            updates.append("end_date")
+
+        parsed_origin_lat = _parse_float(origin_latitude)
+        parsed_origin_lon = _parse_float(origin_longitude)
+        parsed_destination_lat = _parse_float(destination_latitude)
+        parsed_destination_lon = _parse_float(destination_longitude)
+        if origin_latitude is not None and parsed_origin_lat is None:
+            return {"error": "origin_latitude must be numeric"}
+        if origin_longitude is not None and parsed_origin_lon is None:
+            return {"error": "origin_longitude must be numeric"}
+        if destination_latitude is not None and parsed_destination_lat is None:
+            return {"error": "destination_latitude must be numeric"}
+        if destination_longitude is not None and parsed_destination_lon is None:
+            return {"error": "destination_longitude must be numeric"}
+        if origin_latitude is not None:
+            transportation.origin_latitude = parsed_origin_lat
+            updates.append("origin_latitude")
+        if origin_longitude is not None:
+            transportation.origin_longitude = parsed_origin_lon
+            updates.append("origin_longitude")
+        if destination_latitude is not None:
+            transportation.destination_latitude = parsed_destination_lat
+            updates.append("destination_latitude")
+        if destination_longitude is not None:
+            transportation.destination_longitude = parsed_destination_lon
+            updates.append("destination_longitude")
+
+        if not updates:
+            return {"error": "At least one field to update is required"}
+
+        transportation.save(update_fields=updates)
+        return {
+            "success": True,
+            "transportation": _serialize_transportation(transportation),
+        }
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("update_transportation failed")
+        return {"error": "An unexpected error occurred while updating transportation"}
+
+
+@agent_tool(
+    name="remove_transportation",
+    description="Remove transportation from a trip",
+    parameters={
+        "collection_id": {
+            "type": "string",
+            "description": "UUID of the collection/trip",
+            "required": True,
+        },
+        "transportation_id": {
+            "type": "string",
+            "description": "UUID of the transportation",
+            "required": True,
+        },
+    },
+)
+def remove_transportation(
+    user,
+    collection_id: str | None = None,
+    transportation_id: str | None = None,
+):
+    try:
+        if not collection_id or not transportation_id:
+            return {"error": "collection_id and transportation_id are required"}
+
+        collection = _get_accessible_collection(user, collection_id)
+        transportation = Transportation.objects.filter(
+            id=transportation_id,
+            collection=collection,
+        ).first()
+        if transportation is None:
+            return {"error": "Transportation not found"}
+
+        itinerary_deleted = CollectionItineraryItem.objects.filter(
+            collection=collection,
+            content_type=ContentType.objects.get_for_model(Transportation),
+            object_id=transportation.id,
+        ).delete()[0]
+        transportation.delete()
+        return {
+            "success": True,
+            "removed_transportation_id": transportation_id,
+            "removed_itinerary_items": itinerary_deleted,
+        }
+    except Collection.DoesNotExist:
+        return {"error": "Trip not found"}
+    except Exception:
+        logger.exception("remove_transportation failed")
+        return {"error": "An unexpected error occurred while removing transportation"}
 
 
 @agent_tool(
@@ -660,7 +1613,9 @@ def get_weather(user, latitude=None, longitude=None, dates=None):
             return {"error": "dates is required"}
 
         results = [
-            _fetch_temperature_for_date(latitude, longitude, date_value)
+            fetch_daily_temperature(
+                date=date_value, latitude=latitude, longitude=longitude
+            )
             for date_value in dates
         ]
         return {

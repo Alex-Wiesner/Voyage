@@ -1,3 +1,9 @@
+---
+title: conventions
+type: note
+permalink: voyage/knowledge/conventions
+---
+
 # Coding Conventions & Patterns
 
 ## Frontend Patterns

@@ -1,3 +1,9 @@
+---
+title: knowledge
+type: note
+permalink: voyage/knowledge
+---
+
 # DEPRECATED — Migrated to nested structure (2026-03-09)
 
 This file has been superseded. Content has been migrated to:

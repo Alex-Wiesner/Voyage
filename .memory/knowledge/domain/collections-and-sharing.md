@@ -1,3 +1,9 @@
+---
+title: collections-and-sharing
+type: note
+permalink: voyage/knowledge/domain/collections-and-sharing
+---
+
 # Collections & Sharing Domain
 
 ## Collection Sharing Architecture

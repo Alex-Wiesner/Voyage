@@ -1,3 +1,9 @@
+---
+title: litellm-zen-provider-catalog
+type: note
+permalink: voyage/research/litellm-zen-provider-catalog
+---
+
 # Research: LiteLLM provider catalog and OpenCode Zen support
 
 Date: 2026-03-08

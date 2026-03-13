@@ -1,3 +1,9 @@
+---
+title: opencode-zen-connection-error
+type: note
+permalink: voyage/plans/opencode-zen-connection-error
+---
+
 # Plan: Fix OpenCode Zen connection errors in AI travel chat
 
 ## Clarified requirements

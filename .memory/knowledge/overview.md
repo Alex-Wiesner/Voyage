@@ -1,3 +1,9 @@
+---
+title: overview
+type: note
+permalink: voyage/knowledge/overview
+---
+
 # Architecture Overview
 
 ## API Proxy Pattern

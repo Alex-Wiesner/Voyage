@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django.db.models import Q
 
 from .models import (
@@ -345,6 +346,8 @@ class CalendarLocationSerializer(serializers.ModelSerializer):
 
 
 class LocationSerializer(CustomModelSerializer):
+    name = serializers.CharField(required=True)
+    location = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     images = serializers.SerializerMethodField()
     visits = VisitSerializer(many=True, read_only=False, required=False)
     attachments = AttachmentSerializer(many=True, read_only=True)
@@ -425,6 +428,19 @@ class LocationSerializer(CustomModelSerializer):
         )
         # Filter out None values from the serialized data
         return [image for image in serializer.data if image is not None]
+
+    @staticmethod
+    def _truncate_to_model_max_length(value, field_name):
+        if value is None:
+            return value
+        max_length = Location._meta.get_field(field_name).max_length
+        return value[:max_length]
+
+    def validate_name(self, value):
+        return self._truncate_to_model_max_length(value, "name")
+
+    def validate_location(self, value):
+        return self._truncate_to_model_max_length(value, "location")
 
     def validate_collections(self, collections):
         """Validate that collections are compatible with the location being created/updated"""
@@ -510,6 +526,33 @@ class LocationSerializer(CustomModelSerializer):
                 return existing_category
             category_data["name"] = name
         return category_data
+
+    @staticmethod
+    def _normalize_coordinate_input(value):
+        if value in (None, ""):
+            return value
+
+        try:
+            coordinate = Decimal(str(value))
+        except (InvalidOperation, TypeError, ValueError):
+            return value
+
+        return coordinate.quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+
+    def to_internal_value(self, data):
+        if self.instance is None:
+            normalized_data = data.copy()
+
+            for field_name in ("latitude", "longitude"):
+                if field_name not in normalized_data:
+                    continue
+                normalized_data[field_name] = self._normalize_coordinate_input(
+                    normalized_data.get(field_name)
+                )
+
+            data = normalized_data
+
+        return super().to_internal_value(data)
 
     def get_or_create_category(self, category_data):
         user = self.context["request"].user

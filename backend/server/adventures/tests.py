@@ -23,6 +23,7 @@ from adventures.models import (
     Note,
     Transportation,
 )
+from adventures.utils.weather import fetch_daily_temperature
 
 
 User = get_user_model()
@@ -61,7 +62,11 @@ class WeatherViewTests(APITestCase):
         mock_fetch_temperature.return_value = {
             "date": future_date,
             "available": True,
+            "temperature_low_c": 19.0,
+            "temperature_high_c": 26.0,
             "temperature_c": 22.5,
+            "is_estimate": False,
+            "source": "forecast",
         }
 
         response = self.client.post(
@@ -73,18 +78,44 @@ class WeatherViewTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["results"][0]["date"], future_date)
         self.assertTrue(response.json()["results"][0]["available"])
+        self.assertEqual(response.json()["results"][0]["temperature_low_c"], 19.0)
+        self.assertEqual(response.json()["results"][0]["temperature_high_c"], 26.0)
+        self.assertFalse(response.json()["results"][0]["is_estimate"])
+        self.assertEqual(response.json()["results"][0]["source"], "forecast")
         self.assertEqual(response.json()["results"][0]["temperature_c"], 22.5)
         mock_fetch_temperature.assert_called_once_with(future_date, 12.34, 56.78)
 
-    @patch("adventures.views.weather_view.requests.get")
-    def test_daily_temperatures_far_future_returns_unavailable_when_upstream_has_no_data(
+    @patch("adventures.utils.weather.requests.get")
+    def test_daily_temperatures_far_future_uses_historical_estimate(
         self, mock_requests_get
     ):
         future_date = (timezone.now().date() + timedelta(days=3650)).isoformat()
-        mocked_response = Mock()
-        mocked_response.raise_for_status.return_value = None
-        mocked_response.json.return_value = {"daily": {}}
-        mock_requests_get.return_value = mocked_response
+
+        archive_no_data = Mock()
+        archive_no_data.raise_for_status.return_value = None
+        archive_no_data.json.return_value = {"daily": {}}
+
+        forecast_no_data = Mock()
+        forecast_no_data.raise_for_status.return_value = None
+        forecast_no_data.json.return_value = {"daily": {}}
+
+        historical_data = Mock()
+        historical_data.raise_for_status.return_value = None
+        historical_data.json.return_value = {
+            "daily": {
+                "temperature_2m_max": [15.0, 18.0, 20.0],
+                "temperature_2m_min": [7.0, 9.0, 11.0],
+            }
+        }
+
+        call_sequence = [archive_no_data, forecast_no_data, historical_data]
+
+        def mock_get(*args, **kwargs):
+            if call_sequence:
+                return call_sequence.pop(0)
+            return historical_data
+
+        mock_requests_get.side_effect = mock_get
 
         response = self.client.post(
             "/api/weather/daily-temperatures/",
@@ -93,13 +124,17 @@ class WeatherViewTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(
-            response.json()["results"][0],
-            {"date": future_date, "available": False, "temperature_c": None},
-        )
-        self.assertEqual(mock_requests_get.call_count, 2)
+        result = response.json()["results"][0]
+        self.assertTrue(result["available"])
+        self.assertEqual(result["date"], future_date)
+        self.assertEqual(result["temperature_low_c"], 9.0)
+        self.assertEqual(result["temperature_high_c"], 17.7)
+        self.assertEqual(result["temperature_c"], 13.3)
+        self.assertTrue(result["is_estimate"])
+        self.assertEqual(result["source"], "historical_estimate")
+        self.assertGreaterEqual(mock_requests_get.call_count, 3)
 
-    @patch("adventures.views.weather_view.requests.get")
+    @patch("adventures.utils.weather.requests.get")
     def test_daily_temperatures_accepts_zero_lat_lon(self, mock_requests_get):
         today = timezone.now().date().isoformat()
         mocked_response = Mock()
@@ -121,7 +156,41 @@ class WeatherViewTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["results"][0]["date"], today)
         self.assertTrue(response.json()["results"][0]["available"])
+        self.assertEqual(response.json()["results"][0]["temperature_low_c"], 10.0)
+        self.assertEqual(response.json()["results"][0]["temperature_high_c"], 20.0)
+        self.assertFalse(response.json()["results"][0]["is_estimate"])
+        self.assertEqual(response.json()["results"][0]["source"], "archive")
         self.assertEqual(response.json()["results"][0]["temperature_c"], 15.0)
+
+
+class WeatherHelperTests(TestCase):
+    @patch("adventures.utils.weather.requests.get")
+    def test_fetch_daily_temperature_returns_unavailable_when_all_sources_fail(
+        self, mock_requests_get
+    ):
+        mocked_response = Mock()
+        mocked_response.raise_for_status.return_value = None
+        mocked_response.json.return_value = {"daily": {}}
+        mock_requests_get.return_value = mocked_response
+
+        result = fetch_daily_temperature(
+            date=(timezone.now().date() + timedelta(days=6000)).isoformat(),
+            latitude=40.7128,
+            longitude=-74.0060,
+        )
+
+        self.assertEqual(
+            result,
+            {
+                "date": result["date"],
+                "available": False,
+                "temperature_low_c": None,
+                "temperature_high_c": None,
+                "temperature_c": None,
+                "is_estimate": False,
+                "source": None,
+            },
+        )
 
 
 class MCPAuthTests(APITestCase):
@@ -129,6 +198,52 @@ class MCPAuthTests(APITestCase):
         unauthenticated_client = APIClient()
         response = unauthenticated_client.post("/api/mcp", {}, format="json")
         self.assertIn(response.status_code, [401, 403])
+
+
+class LocationPayloadHardeningTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="location-hardening-user",
+            email="location-hardening@example.com",
+            password="password123",
+        )
+        self.client.force_authenticate(user=self.user)
+
+    def test_create_location_truncates_overlong_name_and_location(self):
+        overlong_name = "N" * 250
+        overlong_location = "L" * 250
+
+        response = self.client.post(
+            "/api/locations/",
+            {
+                "name": overlong_name,
+                "location": overlong_location,
+                "is_public": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(len(response.data["name"]), 200)
+        self.assertEqual(len(response.data["location"]), 200)
+        self.assertEqual(response.data["name"], overlong_name[:200])
+        self.assertEqual(response.data["location"], overlong_location[:200])
+
+    def test_create_location_accepts_high_precision_coordinates(self):
+        response = self.client.post(
+            "/api/locations/",
+            {
+                "name": "Precision test",
+                "is_public": False,
+                "latitude": 51.5007292,
+                "longitude": -0.1246254,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data["latitude"], "51.500729")
+        self.assertEqual(response.data["longitude"], "-0.124625")
 
 
 class CollectionViewSetTests(APITestCase):

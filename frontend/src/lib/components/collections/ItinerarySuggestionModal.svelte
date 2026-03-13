@@ -18,6 +18,8 @@
 		location?: string;
 		rating?: number | string | null;
 		price_level?: string | null;
+		latitude?: number | string | null;
+		longitude?: number | string | null;
 	};
 
 	const dispatch = createEventDispatcher();
@@ -46,6 +48,7 @@
 	];
 
 	const supportedApiCategories = ['restaurant', 'activity', 'event', 'lodging'];
+	const LOCATION_MODEL_TEXT_MAX_LENGTH = 200;
 
 	const activityTypes = ['outdoor', 'cultural', 'entertainment', 'other'];
 	const durations = ['few hours', 'half-day', 'full-day'];
@@ -131,6 +134,10 @@
 		return value.trim();
 	}
 
+	function truncateToModelSafeLength(value: string): string {
+		return value.slice(0, LOCATION_MODEL_TEXT_MAX_LENGTH);
+	}
+
 	function normalizeRating(value: unknown): number | null {
 		if (typeof value === 'number' && Number.isFinite(value)) {
 			return value;
@@ -140,6 +147,19 @@
 			const match = value.match(/\d+(\.\d+)?/);
 			if (!match) return null;
 			const parsed = Number(match[0]);
+			return Number.isFinite(parsed) ? parsed : null;
+		}
+
+		return null;
+	}
+
+	function normalizeCoordinate(value: unknown): number | null {
+		if (typeof value === 'number' && Number.isFinite(value)) {
+			return value;
+		}
+
+		if (typeof value === 'string') {
+			const parsed = Number(value.trim());
 			return Number.isFinite(parsed) ? parsed : null;
 		}
 
@@ -169,6 +189,8 @@
 			normalizeText(item.priceLevel) ||
 			normalizeText(item.price);
 		const rating = normalizeRating(item.rating ?? item.score);
+		const latitude = normalizeCoordinate(item.latitude ?? item.lat);
+		const longitude = normalizeCoordinate(item.longitude ?? item.lon ?? item.lng);
 
 		const finalName = name || location;
 		if (!finalName) return null;
@@ -180,30 +202,39 @@
 			category: category || undefined,
 			location: location || undefined,
 			rating,
-			price_level: priceLevel || null
+			price_level: priceLevel || null,
+			latitude,
+			longitude
 		};
 	}
 
 	function buildLocationPayload(suggestion: SuggestionItem) {
-		const name =
+		const resolvedName =
 			normalizeText(suggestion.name) || normalizeText(suggestion.location) || 'Suggestion';
-		const locationText =
+		const name = truncateToModelSafeLength(resolvedName);
+		const resolvedLocation =
 			normalizeText(suggestion.location) ||
 			getCollectionLocation() ||
-			normalizeText(suggestion.name);
+			normalizeText(suggestion.name) ||
+			name;
+		const locationText = truncateToModelSafeLength(resolvedLocation || name);
 		const description =
 			normalizeText(suggestion.description) ||
 			normalizeText(suggestion.why_fits) ||
 			(suggestion.category ? `${suggestion.category} suggestion` : '');
 		const rating = normalizeRating(suggestion.rating);
+		const latitude = normalizeCoordinate(suggestion.latitude);
+		const longitude = normalizeCoordinate(suggestion.longitude);
 
 		return {
 			name,
 			description,
 			location: locationText || name,
 			rating,
+			latitude,
+			longitude,
 			collections: [collection.id],
-			is_public: false
+			is_public: Boolean(collection?.is_public)
 		};
 	}
 
@@ -293,7 +324,8 @@
 			dispatch('addItem', {
 				type: 'location',
 				itemId: location.id,
-				updateDate: false
+				updateDate: false,
+				location
 			});
 		} catch (_err) {
 			error = $t('suggestions.error');

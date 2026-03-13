@@ -1,3 +1,9 @@
+---
+title: travel-agent-context-and-models
+type: note
+permalink: voyage/plans/travel-agent-context-and-models
+---
+
 # Plan: Travel Agent Context + Models Follow-up
 
 ## Scope

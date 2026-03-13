@@ -1,3 +1,9 @@
+---
+title: decisions
+type: note
+permalink: voyage/decisions
+---
+
 # Voyage — Decisions Log
 
 ## Fork from AdventureLog

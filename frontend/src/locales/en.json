@@ -1193,7 +1193,9 @@
 		"drag_to_reorder": "Drag to reorder",
 		"add_to_day": "Add to day",
 		"optimize": "Optimize",
-		"add_place": "+ Add place"
+		"add_place": "+ Add place",
+		"temperature_unavailable": "Temperature unavailable",
+		"temperature_estimated_marker": "est."
 	},
 	"common": {
 		"show_less": "Hide details",

@@ -65,7 +65,10 @@
 
 	type DayTemperature = {
 		available: boolean;
+		temperature_low_c: number | null;
+		temperature_high_c: number | null;
 		temperature_c: number | null;
+		is_estimate: boolean;
 	};
 
 	$: days = groupItemsByDay(collection);
@@ -653,7 +656,12 @@
 				if (!result?.date) continue;
 				nextMap[result.date] = {
 					available: !!result.available,
-					temperature_c: typeof result.temperature_c === 'number' ? result.temperature_c : null
+					temperature_low_c:
+						typeof result.temperature_low_c === 'number' ? result.temperature_low_c : null,
+					temperature_high_c:
+						typeof result.temperature_high_c === 'number' ? result.temperature_high_c : null,
+					temperature_c: typeof result.temperature_c === 'number' ? result.temperature_c : null,
+					is_estimate: result.is_estimate === true
 				};
 			}
 
@@ -993,12 +1001,22 @@
 
 	function formatDayTemperature(day: DayGroup, temps: Record<string, DayTemperature>): string {
 		const temperature = temps[day.date];
-		if (!temperature?.available || temperature.temperature_c === null) {
+		if (
+			!temperature?.available ||
+			temperature.temperature_low_c === null ||
+			temperature.temperature_high_c === null
+		) {
 			return getI18nText('itinerary.temperature_unavailable', 'Temperature unavailable');
 		}
 
-		const rounded = Math.round(temperature.temperature_c);
-		return `${rounded}°C`;
+		const low = Math.round(temperature.temperature_low_c);
+		const high = Math.round(temperature.temperature_high_c);
+		const rangeText = `${low}°–${high}°C`;
+		if (temperature.is_estimate) {
+			return `${rangeText} ${getI18nText('itinerary.temperature_estimated_marker', 'est.')}`;
+		}
+
+		return rangeText;
 	}
 
 	type HardAnchorTiming = {
@@ -2624,6 +2642,18 @@
 		displayDate={suggestionModalDisplayDate}
 		on:close={() => (isSuggestionModalOpen = false)}
 		on:addItem={(e) => {
+			if (e.detail.type === 'location' && e.detail.location?.id) {
+				const createdLocation = e.detail.location;
+				const existingLocations = collection.locations || [];
+				collection = {
+					...collection,
+					locations: [
+						createdLocation,
+						...existingLocations.filter((loc) => loc.id !== createdLocation.id)
+					]
+				};
+			}
+
 			addItineraryItemForObject(
 				e.detail.type,
 				e.detail.itemId,
@@ -2917,8 +2947,6 @@
 						<div class="flex-1 min-w-0 space-y-1">
 							<!-- Main date title + optional day name -->
 							<div class="flex items-baseline gap-2 flex-wrap">
-								<h3 class="text-lg md:text-xl font-bold">{day.displayDate}</h3>
-
 								<!-- Day name - inline with date -->
 								{#if canModify}
 									{#if day.dayMetadata?.name}
