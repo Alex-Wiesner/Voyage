@@ -1521,6 +1521,91 @@ class SearchPlaces429NonRetryableTests(TestCase):
         )
 
 
+class SearchPlacesLinkMetadataTests(TestCase):
+    @patch("chat.agent_tools.requests.post")
+    @patch("chat.agent_tools.requests.get")
+    def test_search_places_prefers_official_website_over_map_fallback(
+        self,
+        mock_get,
+        mock_post,
+    ):
+        mock_get_response = MagicMock()
+        mock_get_response.json.return_value = [{"lat": "48.85837", "lon": "2.294481"}]
+        mock_get_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_get_response
+
+        mock_post_response = MagicMock()
+        mock_post_response.json.return_value = {
+            "elements": [
+                {
+                    "type": "node",
+                    "id": 12345,
+                    "lat": 48.85837,
+                    "lon": 2.294481,
+                    "tags": {
+                        "name": "Eiffel Tower",
+                        "website": "https://www.toureiffel.paris/en",
+                        "contact:website": "https://fallback.example.com",
+                    },
+                }
+            ]
+        }
+        mock_post_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_post_response
+
+        result = search_places(user=None, location="Paris, France", category="tourism")
+
+        self.assertIn("results", result)
+        self.assertEqual(len(result["results"]), 1)
+        place = result["results"][0]
+        self.assertEqual(place.get("link"), "https://www.toureiffel.paris/en")
+        self.assertEqual(
+            place.get("official_website"),
+            "https://www.toureiffel.paris/en",
+        )
+        self.assertTrue(place.get("map_url", "").startswith("https://"))
+
+    @patch("chat.agent_tools.requests.post")
+    @patch("chat.agent_tools.requests.get")
+    def test_search_places_uses_map_fallback_when_no_official_website(
+        self,
+        mock_get,
+        mock_post,
+    ):
+        mock_get_response = MagicMock()
+        mock_get_response.json.return_value = [{"lat": "41.9028", "lon": "12.4964"}]
+        mock_get_response.raise_for_status.return_value = None
+        mock_get.return_value = mock_get_response
+
+        mock_post_response = MagicMock()
+        mock_post_response.json.return_value = {
+            "elements": [
+                {
+                    "type": "way",
+                    "id": 98765,
+                    "center": {"lat": 41.8902, "lon": 12.4922},
+                    "tags": {
+                        "name": "Colosseum",
+                    },
+                }
+            ]
+        }
+        mock_post_response.raise_for_status.return_value = None
+        mock_post.return_value = mock_post_response
+
+        result = search_places(user=None, location="Rome, Italy", category="tourism")
+
+        self.assertIn("results", result)
+        self.assertEqual(len(result["results"]), 1)
+        place = result["results"][0]
+        self.assertIsNone(place.get("official_website"))
+        self.assertEqual(place.get("link"), place.get("map_url"))
+        self.assertEqual(
+            place.get("map_url"),
+            "https://www.openstreetmap.org/way/98765",
+        )
+
+
 class GetWeatherCoordFallbackTests(APITransactionTestCase):
     """get_weather lat/lng required param should be retried with collection location coords."""
 
@@ -2015,3 +2100,116 @@ class DaySuggestionsCoordinateEnrichmentTests(TestCase):
         self.assertEqual(len(enriched), 1)
         self.assertNotIn("latitude", enriched[0])
         self.assertNotIn("longitude", enriched[0])
+
+    def test_preserves_existing_coordinates_and_link_when_present(self):
+        suggestions = [
+            {
+                "name": "Known Place",
+                "location": "Somewhere",
+                "latitude": 10.5,
+                "longitude": 20.5,
+                "link": "https://existing.example.com",
+            }
+        ]
+        place_candidates = [
+            {
+                "name": "Known Place",
+                "address": "Somewhere",
+                "latitude": 1.0,
+                "longitude": 2.0,
+                "link": "https://candidate.example.com",
+            }
+        ]
+
+        enriched = self.view._enrich_suggestions_with_coordinates(
+            suggestions,
+            place_candidates,
+        )
+
+        self.assertEqual(enriched[0]["latitude"], 10.5)
+        self.assertEqual(enriched[0]["longitude"], 20.5)
+        self.assertEqual(enriched[0]["link"], "https://existing.example.com")
+
+    def test_fills_missing_coordinates_and_link_from_place_match(self):
+        suggestions = [
+            {
+                "name": "Roscioli",
+                "location": "Via dei Giubbonari, Rome",
+            }
+        ]
+        place_candidates = [
+            {
+                "name": "Roscioli",
+                "address": "Via dei Giubbonari, Rome",
+                "latitude": 41.8933,
+                "longitude": 12.4722,
+                "link": "https://www.roscioli.com",
+            }
+        ]
+
+        enriched = self.view._enrich_suggestions_with_coordinates(
+            suggestions,
+            place_candidates,
+        )
+
+        self.assertEqual(len(enriched), 1)
+        self.assertEqual(enriched[0]["latitude"], 41.8933)
+        self.assertEqual(enriched[0]["longitude"], 12.4722)
+        self.assertEqual(enriched[0]["link"], "https://www.roscioli.com")
+
+    def test_preserves_existing_link_while_filling_missing_coordinates(self):
+        suggestions = [
+            {
+                "name": "Borough Market",
+                "location": "Southwark",
+                "link": "https://existing.example.com/borough",
+            }
+        ]
+        place_candidates = [
+            {
+                "name": "Borough Market",
+                "address": "8 Southwark St, London",
+                "latitude": 51.5055,
+                "longitude": -0.0904,
+                "link": "https://candidate.example.com/borough",
+            }
+        ]
+
+        enriched = self.view._enrich_suggestions_with_coordinates(
+            suggestions,
+            place_candidates,
+        )
+
+        self.assertEqual(len(enriched), 1)
+        self.assertEqual(enriched[0]["latitude"], 51.5055)
+        self.assertEqual(enriched[0]["longitude"], -0.0904)
+        self.assertEqual(enriched[0]["link"], "https://existing.example.com/borough")
+
+    def test_preserves_existing_coordinates_while_filling_missing_link(self):
+        suggestions = [
+            {
+                "name": "City Museum",
+                "location": "Old Town",
+                "latitude": 40.7128,
+                "longitude": -74.006,
+            }
+        ]
+        place_candidates = [
+            {
+                "name": "City Museum",
+                "address": "Old Town",
+                "latitude": 40.7128,
+                "longitude": -74.006,
+                "link": "https://citymuseum.example.com",
+            }
+        ]
+
+        enriched = self.view._enrich_suggestions_with_coordinates(
+            suggestions,
+            place_candidates,
+        )
+
+        self.assertEqual(len(enriched), 1)
+        self.assertEqual(enriched[0]["latitude"], 40.7128)
+        self.assertEqual(enriched[0]["longitude"], -74.006)
+        self.assertEqual(enriched[0]["link"], "https://citymuseum.example.com")

@@ -228,6 +228,47 @@ def _parse_address(tags):
     return ", ".join([p for p in parts if p])
 
 
+def _extract_official_website(tags):
+    if not isinstance(tags, dict):
+        return None
+
+    website_fields = [
+        "website",
+        "contact:website",
+        "official_website",
+        "url",
+    ]
+    for field in website_fields:
+        value = tags.get(field)
+        if isinstance(value, str):
+            normalized = value.strip()
+            if normalized:
+                return normalized
+    return None
+
+
+def _build_osm_map_url(item):
+    if not isinstance(item, dict):
+        return None
+
+    osm_type = item.get("type")
+    osm_id = item.get("id")
+    if osm_type in {"node", "way", "relation"} and osm_id is not None:
+        return f"https://www.openstreetmap.org/{osm_type}/{osm_id}"
+
+    latitude = item.get("lat")
+    longitude = item.get("lon")
+    if latitude is None or longitude is None:
+        center = item.get("center") or {}
+        latitude = center.get("lat")
+        longitude = center.get("lon")
+
+    if latitude is None or longitude is None:
+        return None
+
+    return f"https://www.openstreetmap.org/?mlat={latitude}&mlon={longitude}"
+
+
 @agent_tool(
     name="search_places",
     description=(
@@ -309,6 +350,10 @@ def search_places(
             if latitude is None or longitude is None:
                 continue
 
+            official_website = _extract_official_website(tags)
+            map_url = _build_osm_map_url(item)
+            preferred_link = official_website or map_url
+
             results.append(
                 {
                     "name": name,
@@ -316,6 +361,9 @@ def search_places(
                     "latitude": latitude,
                     "longitude": longitude,
                     "category": category,
+                    "link": preferred_link,
+                    "official_website": official_website,
+                    "map_url": map_url,
                 }
             )
 

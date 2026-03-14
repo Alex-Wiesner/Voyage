@@ -370,28 +370,34 @@ class DaySuggestionsView(APIView):
             if not isinstance(suggestion, dict):
                 continue
 
-            if (
-                suggestion.get("latitude") is not None
-                and suggestion.get("longitude") is not None
-            ):
-                enriched.append(suggestion)
-                continue
-
-            matched_place = self._best_place_match(suggestion, place_candidates)
-            if not matched_place:
-                enriched.append(suggestion)
-                continue
-
-            if (
-                matched_place.get("latitude") is None
-                or matched_place.get("longitude") is None
-            ):
-                enriched.append(suggestion)
-                continue
-
             merged = dict(suggestion)
-            merged["latitude"] = matched_place.get("latitude")
-            merged["longitude"] = matched_place.get("longitude")
+            has_coordinates = (
+                merged.get("latitude") is not None
+                and merged.get("longitude") is not None
+            )
+            has_link = bool(merged.get("link"))
+
+            if has_coordinates and has_link:
+                enriched.append(merged)
+                continue
+
+            matched_place = self._best_place_match(merged, place_candidates)
+            if not matched_place:
+                enriched.append(merged)
+                continue
+
+            if not has_coordinates and (
+                matched_place.get("latitude") is not None
+                and matched_place.get("longitude") is not None
+            ):
+                merged["latitude"] = matched_place.get("latitude")
+                merged["longitude"] = matched_place.get("longitude")
+
+            if not has_link:
+                matched_link = matched_place.get("link")
+                if matched_link:
+                    merged["link"] = matched_link
+
             merged["location"] = merged.get("location") or matched_place.get("address")
             enriched.append(merged)
 
