@@ -2,6 +2,8 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import { t } from 'svelte-i18n';
 	import { mdiSend, mdiPlus, mdiDelete, mdiMenu, mdiClose } from '@mdi/js';
+	import { marked } from 'marked';
+	import DOMPurify from 'dompurify';
 	import type { ChatProviderCatalogEntry, CollectionItineraryItem, Location } from '$lib/types.js';
 	import { addToast } from '$lib/toasts';
 
@@ -932,6 +934,14 @@
 			text: `${result.name.replaceAll('_', ' ')} completed.`
 		};
 	}
+
+	function renderMarkdown(markdown: string): string {
+		return marked(markdown) as string;
+	}
+
+	function renderAssistantMarkdown(content: string): string {
+		return DOMPurify.sanitize(renderMarkdown(content));
+	}
 </script>
 
 <div
@@ -1126,7 +1136,13 @@
 												? 'chat-bubble-primary'
 												: 'chat-bubble-neutral'}"
 										>
-											<div class="whitespace-pre-wrap">{msg.content}</div>
+											{#if msg.role === 'assistant'}
+												<div class="assistant-markdown">
+													{@html renderAssistantMarkdown(msg.content)}
+												</div>
+											{:else}
+												<div class="whitespace-pre-wrap break-words">{msg.content}</div>
+											{/if}
 											{#if msg.role === 'assistant' && msg.tool_results}
 												<div class="mt-2 space-y-2">
 													{#each deduplicateContextTools(uniqueToolResultsByCallId(msg.tool_results)) as result}
@@ -1327,3 +1343,56 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.assistant-markdown {
+		color: inherit;
+		line-height: 1.5;
+		word-break: break-word;
+	}
+
+	.assistant-markdown :global(p) {
+		margin: 0;
+	}
+
+	.assistant-markdown :global(p + p),
+	.assistant-markdown :global(ul + p),
+	.assistant-markdown :global(ol + p),
+	.assistant-markdown :global(pre + p),
+	.assistant-markdown :global(blockquote + p) {
+		margin-top: 0.5rem;
+	}
+
+	.assistant-markdown :global(ul),
+	.assistant-markdown :global(ol) {
+		margin: 0.5rem 0 0;
+		padding-left: 1.25rem;
+	}
+
+	.assistant-markdown :global(li + li) {
+		margin-top: 0.25rem;
+	}
+
+	.assistant-markdown :global(strong),
+	.assistant-markdown :global(em),
+	.assistant-markdown :global(code),
+	.assistant-markdown :global(a) {
+		color: inherit;
+	}
+
+	.assistant-markdown :global(a) {
+		text-decoration: underline;
+	}
+
+	.assistant-markdown :global(pre) {
+		margin-top: 0.5rem;
+		padding: 0.5rem;
+		border-radius: 0.5rem;
+		background-color: color-mix(in srgb, currentColor 12%, transparent);
+		overflow-x: auto;
+	}
+
+	.assistant-markdown :global(code) {
+		font-size: 0.875em;
+	}
+</style>

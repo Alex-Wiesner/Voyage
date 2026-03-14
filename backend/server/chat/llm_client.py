@@ -33,6 +33,8 @@ When modifying itineraries:
 When chat context includes a trip collection:
 - Treat context as itinerary-wide (potentially multiple stops), not a single destination
 - Use get_trip_details first when you need complete collection context before searching for places
+- Use the active collection_id from context for collection-scoped itinerary management tools (get_trip_details, add_to_itinerary, move_itinerary_item, remove_itinerary_item, update_location_details)
+- Call get_trip_details before move_itinerary_item, remove_itinerary_item, or update_location_details when exact itinerary/location IDs are required, and never invent IDs
 - Ground place searches in trip stops and dates from the provided trip context
 - Only call search_places when you have a concrete, non-empty location string; if location is missing or unclear, ask a clarifying question to obtain it first
 

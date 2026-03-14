@@ -493,6 +493,13 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         context_parts = []
         itinerary_stops = []
+        collection_id_guidance = ""
+        collection_tool_id_guidance = (
+            "Use this exact collection_id for get_trip_details, add_to_itinerary, "
+            "move_itinerary_item, remove_itinerary_item, and update_location_details. "
+            "Call get_trip_details first before move_itinerary_item, "
+            "remove_itinerary_item, or update_location_details when exact IDs are needed."
+        )
         if collection_name:
             context_parts.append(f"Trip: {collection_name}")
         if start_date and end_date:
@@ -513,10 +520,8 @@ class ChatViewSet(viewsets.ModelViewSet):
                 pass
 
         if collection:
-            context_parts.append(
-                "Collection UUID (use this exact collection_id for get_trip_details and add_to_itinerary): "
-                f"{collection.id}"
-            )
+            collection_id_guidance = collection_tool_id_guidance
+            context_parts.append(f"Collection UUID: {collection.id}")
             seen_stops = set()
             for location in collection.locations.select_related(
                 "city", "country"
@@ -577,6 +582,10 @@ class ChatViewSet(viewsets.ModelViewSet):
         system_prompt = get_system_prompt(request.user, collection)
         if context_parts:
             system_prompt += "\n\n## Trip Context\n" + "\n".join(context_parts)
+        if collection_id_guidance:
+            system_prompt += (
+                "\n\n## Collection Tool Guardrails\n" + collection_id_guidance
+            )
 
         ChatMessage.objects.create(
             conversation=conversation,
@@ -883,6 +892,18 @@ class ChatViewSet(viewsets.ModelViewSet):
                                 function_name,
                                 result,
                             )
+                            await sync_to_async(
+                                ChatMessage.objects.create,
+                                thread_sensitive=True,
+                            )(
+                                conversation=conversation,
+                                role="assistant",
+                                content=error_event["error"],
+                            )
+                            await sync_to_async(
+                                conversation.save,
+                                thread_sensitive=True,
+                            )(update_fields=["updated_at"])
                             yield f"data: {json.dumps(error_event)}\n\n"
                             yield "data: [DONE]\n\n"
                             return

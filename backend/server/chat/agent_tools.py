@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from adventures.models import (
     Collection,
@@ -134,6 +135,23 @@ def _parse_float(value):
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _extract_exception_message(exc, fallback_message):
+    detail = getattr(exc, "detail", None)
+    if isinstance(detail, dict):
+        for value in detail.values():
+            if isinstance(value, (list, tuple)) and value:
+                return str(value[0])
+            if value:
+                return str(value)
+    elif isinstance(detail, (list, tuple)) and detail:
+        return str(detail[0])
+    elif detail:
+        return str(detail)
+
+    message = str(exc).strip()
+    return message or fallback_message
 
 
 def _serialize_lodging(lodging: Lodging):
@@ -810,7 +828,23 @@ def move_itinerary_item(
                     }
                 )
 
-        updated_items = reorder_itinerary_items(user, updates)
+        try:
+            updated_items = reorder_itinerary_items(user, updates)
+        except ValidationError as exc:
+            return {
+                "error": _extract_exception_message(
+                    exc,
+                    "Unable to move itinerary item due to invalid itinerary update",
+                )
+            }
+        except PermissionDenied as exc:
+            return {
+                "error": _extract_exception_message(
+                    exc,
+                    "You do not have permission to modify this itinerary item",
+                )
+            }
+
         moved_item = next(
             (item for item in updated_items if str(item.id) == str(itinerary_item.id)),
             itinerary_item,
