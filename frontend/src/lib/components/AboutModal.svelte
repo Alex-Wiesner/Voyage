@@ -55,7 +55,11 @@
 				</div>
 			</div>
 
-			<button class="btn btn-ghost btn-sm btn-square" on:click={close}>
+			<button
+				class="btn btn-ghost btn-sm btn-square"
+				on:click={close}
+				aria-label={$t('about.close')}
+			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path
 						stroke-linecap="round"

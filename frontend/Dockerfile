@@ -1,5 +1,6 @@
 # Use the official Bun image as the build platform (supports linux/amd64 and linux/arm64 natively)
-FROM oven/bun:1.2.22-alpine AS builder
+ARG BUN_VERSION=1.3.10
+FROM oven/bun:${BUN_VERSION}-alpine AS builder
 
 # Metadata labels for the Voyage image
 LABEL maintainer="Voyage contributors" \

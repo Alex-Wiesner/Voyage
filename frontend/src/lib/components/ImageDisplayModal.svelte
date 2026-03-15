@@ -129,15 +129,16 @@
 										class="w-2 h-2 rounded-full transition-all {index === currentIndex
 											? 'bg-primary'
 											: 'bg-base-300 hover:bg-base-400'}"
+										aria-label={`${$t('adventures.images')} ${index + 1}`}
 										on:click={() => goToSlide(index)}
-									/>
+									></button>
 								{/each}
 							</div>
 						</div>
 					{/if}
 
 					<!-- Close Button -->
-					<button class="btn btn-ghost btn-square" on:click={close}>
+					<button class="btn btn-ghost btn-square" on:click={close} aria-label={$t('about.close')}>
 						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path
 								stroke-linecap="round"
@@ -156,6 +157,7 @@
 				{#if images.length > 1}
 					<button
 						class="absolute left-4 top-1/2 -translate-y-1/2 z-20 btn btn-circle btn-primary/80 hover:btn-primary"
+						aria-label={$t('adventures.previous_image')}
 						on:click={previousSlide}
 					>
 						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,6 +185,7 @@
 				{#if images.length > 1}
 					<button
 						class="absolute right-4 top-1/2 -translate-y-1/2 z-20 btn btn-circle btn-primary/80 hover:btn-primary"
+						aria-label={$t('adventures.next_image')}
 						on:click={nextSlide}
 					>
 						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

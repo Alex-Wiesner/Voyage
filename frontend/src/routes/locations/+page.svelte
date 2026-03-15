@@ -39,7 +39,7 @@
 
 			if (index !== -1) {
 				adventures[index] = { ...locationBeingUpdated };
-				adventures = adventures; // Trigger reactivity
+				adventures = [...adventures]; // Trigger reactivity
 			} else {
 				adventures = [{ ...locationBeingUpdated }, ...adventures];
 				data.props.adventures = adventures; // Update data.props.adventures as well
@@ -51,12 +51,15 @@
 	let count = data.props.count || 0;
 	let totalPages = Math.ceil(count / resultsPerPage);
 	let currentPage: number = 1;
+	let pageUrl: URL;
 
 	let is_category_modal_open: boolean = false;
 	let typeString: string = '';
 	let adventureToEdit: Location | null = null;
 	let isLocationModalOpen: boolean = false;
 	let sidebarOpen = false;
+
+	$: pageUrl = $page.url;
 
 	// Reactive statements - Only read from URL, don't write
 	$: {
@@ -72,7 +75,7 @@
 	}
 
 	$: {
-		let url = new URL($page.url);
+		let url = new URL(pageUrl);
 		let page = url.searchParams.get('page');
 		if (page) {
 			currentPage = parseInt(page);
@@ -90,7 +93,7 @@
 	}
 
 	$: {
-		let url = new URL($page.url);
+		let url = new URL(pageUrl);
 		currentSort.order_by = url.searchParams.get('order_by') || 'updated_at';
 		currentSort.order = url.searchParams.get('order_direction') || 'asc';
 

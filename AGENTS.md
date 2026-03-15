@@ -63,7 +63,7 @@ Run in this order:
 4. `cd frontend && bun run build`
 
 ## Known Issues (Expected)
-- Frontend `bun run check`: **0 errors + 1 warning** expected (pre-existing in `RegionCard.svelte`)
+- Frontend `bun run check`: **0 errors and 0 warnings** expected (RegionCard warning resolved)
 - Backend tests: **6/41 fail** (pre-existing: 2 user email key errors + 4 geocoding API mocks; 41 chat tests all pass)
 - Docker dev setup has frontend-backend communication issues (500 errors beyond homepage)
 

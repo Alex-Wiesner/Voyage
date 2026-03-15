@@ -210,7 +210,7 @@
 				</div>
 
 				<!-- Close Button -->
-				<button class="btn btn-ghost btn-square" on:click={close}>
+				<button class="btn btn-ghost btn-square" on:click={close} aria-label={$t('about.close')}>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
 							stroke-linecap="round"
@@ -340,7 +340,12 @@
 													}
 												}}
 											/>
-											<button type="button" class="btn btn-primary join-item" on:click={addLink}>
+											<button
+												type="button"
+												class="btn btn-primary join-item"
+												on:click={addLink}
+												aria-label={$t('adventures.add')}
+											>
 												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path
 														stroke-linecap="round"
@@ -386,6 +391,7 @@
 													<button
 														type="button"
 														class="btn btn-ghost btn-xs text-error"
+														aria-label={$t('adventures.remove')}
 														on:click={() => {
 															newNote.links = newNote.links.filter((_, index) => index !== i);
 														}}
