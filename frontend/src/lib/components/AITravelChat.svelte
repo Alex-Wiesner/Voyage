@@ -1196,37 +1196,37 @@
 											{#if msg.role === 'assistant' && msg.tool_results}
 												<div class="mt-2 space-y-2">
 													{#each deduplicateContextTools(uniqueToolResultsByCallId(msg.tool_results)) as result}
-													{#if hasPlaceResults(result)}
-														<div class="grid gap-2">
-															{#each getPlaceResults(result) as place}
-																{@const placeLink = getPreferredPlaceLink(place)}
-																<div class="card card-compact bg-base-200 p-3">
-																	<h4 class="font-semibold">{place.name}</h4>
-																	{#if place.address}
-																		<p class="text-sm text-base-content/70">{place.address}</p>
-																	{/if}
-																	{#if place.rating}
-																		<div class="flex items-center gap-1 text-sm">
-																			<span>⭐</span>
-																			<span>{place.rating}</span>
-																		</div>
-																	{/if}
-																	{#if placeLink}
-																		<div class="mt-2">
-																			<a
-																				href={placeLink}
-																				target="_blank"
-																				rel="noopener noreferrer"
-																				class="btn btn-ghost btn-xs"
-																			>
-																				↗ {$t('adventures.external_link')}
-																			</a>
-																		</div>
-																	{/if}
-																	{#if collectionId}
-																		{@const isDuplicate = mergedLocationNames.has(
-																			normalizeLocationName(place.name)
-																		)}
+														{#if hasPlaceResults(result)}
+															<div class="grid gap-2">
+																{#each getPlaceResults(result) as place}
+																	{@const placeLink = getPreferredPlaceLink(place)}
+																	<div class="card card-compact bg-base-200 p-3">
+																		<h4 class="font-semibold">{place.name}</h4>
+																		{#if place.address}
+																			<p class="text-sm text-base-content/70">{place.address}</p>
+																		{/if}
+																		{#if place.rating}
+																			<div class="flex items-center gap-1 text-sm">
+																				<span>⭐</span>
+																				<span>{place.rating}</span>
+																			</div>
+																		{/if}
+																		{#if placeLink}
+																			<div class="mt-2">
+																				<a
+																					href={placeLink}
+																					target="_blank"
+																					rel="noopener noreferrer"
+																					class="btn btn-ghost btn-xs"
+																				>
+																					↗ {$t('adventures.external_link')}
+																				</a>
+																			</div>
+																		{/if}
+																		{#if collectionId}
+																			{@const isDuplicate = mergedLocationNames.has(
+																				normalizeLocationName(place.name)
+																			)}
 																			<button
 																				class="btn btn-xs btn-primary btn-outline mt-2"
 																				on:click={() => openDateSelector(place)}
@@ -1238,10 +1238,10 @@
 																					{$t('add_to_itinerary')}
 																				{/if}
 																			</button>
-																	{/if}
-																</div>
-															{/each}
-														</div>
+																		{/if}
+																	</div>
+																{/each}
+															</div>
 														{:else if hasWebSearchResults(result)}
 															<div class="grid gap-2">
 																{#each getWebSearchResults(result) as item}

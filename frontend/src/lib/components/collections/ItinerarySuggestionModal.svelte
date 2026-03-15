@@ -547,17 +547,17 @@
 									{/if}
 								</div>
 
-							<div class="card-actions justify-between items-center mt-3">
-								{#if suggestion.link}
-									<a
-										href={suggestion.link}
-										target="_blank"
-										rel="noopener noreferrer"
-										class="btn btn-ghost btn-xs"
-									>
-										↗ {$t('adventures.external_link')}
-									</a>
-								{/if}
+								<div class="card-actions justify-between items-center mt-3">
+									{#if suggestion.link}
+										<a
+											href={suggestion.link}
+											target="_blank"
+											rel="noopener noreferrer"
+											class="btn btn-ghost btn-xs"
+										>
+											↗ {$t('adventures.external_link')}
+										</a>
+									{/if}
 									<button
 										type="button"
 										class="btn btn-primary btn-sm"
